@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.functions.fn.transform;
 
 import org.exist.dom.persistent.NodeProxy;
@@ -28,7 +51,6 @@ import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQueryContext;
 import org.exist.xquery.util.DocUtils;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
@@ -42,7 +64,7 @@ import javax.xml.transform.dom.DOMSource;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-public class URIResolution {
+class URIResolution {
 
     /**
      * URI resolution, the core should be the same as for fn:resolve-uri
@@ -70,13 +92,10 @@ public class URIResolution {
     }
 
     public static class CompileTimeURIResolver implements URIResolver {
+        private final Expression callingExpression;
 
-        private final XQueryContext xQueryContext;
-        private final Expression containingExpression;
-
-        public CompileTimeURIResolver(XQueryContext xQueryContext, Expression containingExpression) {
-            this.xQueryContext = xQueryContext;
-            this.containingExpression = containingExpression;
+        public CompileTimeURIResolver(final Expression callingExpression) {
+            this.callingExpression = callingExpression;
         }
 
         @Override
@@ -97,39 +116,43 @@ public class URIResolution {
         }
 
         protected Source resolveDocument(final String location) throws XPathException {
-            return URIResolution.resolveDocument(location, xQueryContext, containingExpression);
+            return URIResolution.resolveDocument(callingExpression, location);
         }
     }
 
     /**
      * Resolve an absolute document location, stylesheet or included source
      *
-     * @param location of the stylesheet
-     * @return the resolved stylesheet as a source
+     * @param callingExpression the calling expression.
+     * @param location of the stylesheet.
+     *
+     * @return the resolved stylesheet as a source.
+     *
      * @throws org.exist.xquery.XPathException if the item does not exist, or is not a document
      */
-    static Source resolveDocument(final String location, final XQueryContext xQueryContext, Expression containingExpression) throws XPathException {
+    static Source resolveDocument(final Expression callingExpression, final String location) throws XPathException {
 
         final Sequence document;
         try {
-            document = DocUtils.getDocument(xQueryContext, location);
+            document = DocUtils.getDocument(callingExpression.getContext(), location);
         } catch (final PermissionDeniedException e) {
-            throw new XPathException(containingExpression, ErrorCodes.FODC0002,
+            throw new XPathException(callingExpression, ErrorCodes.FODC0002,
                 "Can not access '" + location + "'" + e.getMessage());
         }
         if (document == null || document.isEmpty()) {
-            throw new XPathException(containingExpression, ErrorCodes.FODC0002,
+            throw new XPathException(callingExpression, ErrorCodes.FODC0002,
                 "No document found at location '"+ location);
         }
         if (document.hasOne() && Type.subTypeOf(document.getItemType(), Type.NODE)) {
             if (document instanceof NodeProxy proxy) {
-                return new DOMSource(proxy.getNode());
+                final Node node = proxy.getNode();
+                return new DOMSource(node, node.getBaseURI());
             }
             else if (document.itemAt(0) instanceof Node node) {
-                return new DOMSource(node);
+                return new DOMSource(node, node.getBaseURI());
             }
         }
-        throw new XPathException(containingExpression, ErrorCodes.FODC0002,
+        throw new XPathException(callingExpression, ErrorCodes.FODC0002,
             "Location '"+ location + "' returns an item which is not a document node");
     }
 }

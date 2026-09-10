@@ -57,6 +57,7 @@ import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
 import org.exist.xquery.value.Type;
+import org.exist.xslt.SaxonConfiguration;
 
 import static org.exist.xquery.FunctionDSL.*;
 import static org.exist.xquery.regex.RegexUtil.*;
@@ -138,7 +139,7 @@ public class FunReplace extends BasicFunction {
     		final String pattern = args[1].itemAt(0).getStringValue();
 			final String replace = args[2].itemAt(0).getStringValue();
 
-			final Configuration config = context.getBroker().getBrokerPool().getSaxonConfiguration();
+			final Configuration config = SaxonConfiguration.getConfiguration(getContext().getConfiguration(), null).getConfiguration();
 
 			final List<String> warnings = new ArrayList<>(1);
 

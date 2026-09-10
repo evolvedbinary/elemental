@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -47,6 +71,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.sf.saxon.regex.RegularExpression;
+import org.exist.xslt.SaxonConfiguration;
 
 import static org.exist.xquery.FunctionDSL.*;
 import static org.exist.xquery.functions.fn.FnModule.functionSignatures;
@@ -515,8 +540,8 @@ public final class FunMatches extends Function implements Optimizable, IndexUseR
     private boolean matchXmlRegex(final String string, final String pattern, final String flags) throws XPathException {
         try {
             List<String> warnings = new ArrayList<>(1);
-            RegularExpression regex = context.getBroker().getBrokerPool()
-                    .getSaxonConfiguration()
+            RegularExpression regex = SaxonConfiguration.getConfiguration(getContext().getConfiguration(), null)
+                    .getConfiguration()
                     .compileRegularExpression(pattern, flags, "XP30", warnings);
 
             for (final String warning : warnings) {

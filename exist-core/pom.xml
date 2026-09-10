@@ -755,7 +755,9 @@
                                 <include>src/main/java/org/exist/storage/io/VariableByteFilterInputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteFilterOutputStream.java</include>
                                 <include>src/main/java/org/exist/storage/io/VariableByteOutput.java</include>
+                                <include>src/main/java/org/exist/storage/serializers/FeatureKeys.java</include>
                                 <include>src/test/java/org/exist/storage/serializers/NativeSerializerTest.java</include>
+                                <include>src/main/java/org/exist/storage/serializers/NodeValueInputSource.java</include>
                                 <include>src/main/java/org/exist/util/ByteOrderMark.java</include>
                                 <include>src/main/java/org/exist/util/JREUtil.java</include>
                                 <include>src/main/java/org/exist/util/OSUtil.java</include>
@@ -789,10 +791,12 @@
                                 <include>src/main/java/org/exist/xquery/functions/system/GetModuleLoadPath.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/system/GetModuleLoadPathTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/FunctionAvailable.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/transform/Transform.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xmldb/XMLDBStoreTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</include>
                                 <include>src/main/java/org/exist/xquery/value/ArrayWrapper.java</include>
                                 <include>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</include>
+                                <include>src/test/java/xquery/xquery3/transform/XQuery3TransformTests.java</include>
                             </includes>
                         </licenseSet>
 
@@ -822,6 +826,7 @@
                                 <include>src/test/xquery/maps/maps.xqm</include>
                                 <include>src/test/xquery/numbers/format-numbers.xql</include>
                                 <include>src/test/xquery/util/util.xml</include>
+                                <include>src/test/xquery/xinclude/xinclude.xml</include>
                                 <include>src/test/xquery/xquery3/parse-xml.xqm</include>
                                 <include>src/test/xquery/xquery3/serialize.xql</include>
                                 <include>src/test/xquery/xquery3/xml-to-json.xql</include>
@@ -1386,6 +1391,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/FnInnerMost.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FnModule.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FnOuterMost.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FnTransform.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunAbs.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunAdjustTimezone.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunAnalyzeString.java</include>
@@ -1434,6 +1440,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/fn/FunLangTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunLast.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunLocalName.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunMatches.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunMax.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunMin.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunName.java</include>
@@ -1487,9 +1494,11 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/QNameFunctions.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Convert.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Delivery.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/fn/transform/FunTransformTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Options.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Transform.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/transform/URIResolution.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/inspect/InspectModuleTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/map/MapExpr.java</include>
@@ -1515,8 +1524,8 @@
                                 <include>src/main/java/org/exist/xquery/functions/system/SystemModule.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/system/TriggerSystemTask.java</include>
                                 <include>src/test/resources-filtered/org/exist/xquery/functions/transform/transform-from-pkg-test.conf.xml</include>
-                                <include>src/main/java/org/exist/xquery/functions/transform/Transform.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/transform/TransformModule.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/transform/TransformTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/util/Base64FunctionsTest.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/util/BaseConverterTest.java</include>
@@ -1601,7 +1610,10 @@
                                 <include>src/main/java/org/exist/xquery/value/ValueSequence.java</include>
                                 <include>src/test/java/org/exist/xquery/value/YearMonthDurationTest.java</include>
                                 <include>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</include>
+                                <include>src/main/java/org/exist/xslt/EXistDbInputSource.java</include>
                                 <include>src/main/java/org/exist/xslt/EXistURIResolver.java</include>
+                                <include>src/main/java/org/exist/xslt/SaxonConfiguration.java</include>
+                                <include>src/test/java/org/exist/xslt/SaxonConfigurationTest.java</include>
                                 <include>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</include>
                                 <include>src/main/java/org/exist/xupdate/Append.java</include>
                                 <include>src/main/java/org/exist/xupdate/Conditional.java</include>
@@ -1615,6 +1627,7 @@
                                 <include>src/main/java/org/exist/xupdate/Update.java</include>
                                 <include>src/main/java/org/exist/xupdate/XUpdateProcessor.java</include>
                                 <include>src/test/java/org/exist/xupdate/XUpdateTest.java</include>
+                                <include>src/test/java/xquery/xquery3/XQuery3Tests.java</include>
                             </includes>
                         </licenseSet>
 
@@ -1662,6 +1675,7 @@
                                 <exclude>src/test/xquery/xqsuite/xqsuite-assertions-inline.xqm</exclude>
                                 <exclude>src/test/xquery/xqsuite/xqsuite-assertions.resources.xqm.ignore</exclude>
                                 <exclude>src/test/xquery/xquery3/function-reference.xqm</exclude>
+                                <exclude>src/test/xquery/xinclude/xinclude.xml</exclude>
                                 <exclude>src/test/xquery/xquery3/parse-xml.xqm</exclude>
                                 <exclude>src/test/xquery/xquery3/postfix-expr.xqm</exclude>
                                 <exclude>src/test/xquery/xquery3/serialize.xql</exclude>
@@ -2039,7 +2053,9 @@
                                 <exclude>src/test/java/org/exist/storage/lock/ProtectedModeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/recovery/RecoveryManager.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/serializers/EXistOutputKeys.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/serializers/FeatureKeys.java</exclude>
                                 <exclude>src/test/java/org/exist/storage/serializers/NativeSerializerTest.java</exclude>
+                                <exclude>src/main/java/org/exist/storage/serializers/NodeValueInputSource.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/serializers/Serializer.java</exclude>
                                 <exclude>src/main/java/org/exist/storage/serializers/XIncludeFilter.java</exclude>
                                 <exclude>src/test/resources-filtered/org/exist/storage/statistics/conf.xml</exclude>
@@ -2341,6 +2357,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnInnerMost.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnModule.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnOuterMost.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FnTransform.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunAbs.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunAdjustTimezone.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunAnalyzeString.java</exclude>
@@ -2390,6 +2407,7 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/FunLangTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunLast.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunLocalName.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunMatches.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunMax.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunMin.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunName.java</exclude>
@@ -2447,9 +2465,11 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/transform/ConvertTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Delivery.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/transform/FunTransformITTest.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/fn/transform/FunTransformTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Options.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Transform.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/transform/URIResolution.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/inspect/InspectModuleTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/integer/WordPicture.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/map/MapExpr.java</exclude>
@@ -2487,6 +2507,7 @@
                                 <exclude>src/test/resources-filtered/org/exist/xquery/functions/transform/transform-from-pkg-test.conf.xml</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/transform/Transform.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/transform/TransformFromPkgTest.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/transform/TransformModule.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/transform/TransformTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/util/Base64FunctionsTest.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/util/BaseConverterTest.java</exclude>
@@ -2588,7 +2609,10 @@
                                 <exclude>src/main/java/org/exist/xquery/value/ValueSequence.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/value/YearMonthDurationTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/value/YearMonthDurationValue.java</exclude>
+                                <exclude>src/main/java/org/exist/xslt/EXistDbInputSource.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/EXistURIResolver.java</exclude>
+                                <exclude>src/main/java/org/exist/xslt/SaxonConfiguration.java</exclude>
+                                <exclude>src/test/java/org/exist/xslt/SaxonConfigurationTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xslt/XsltURIResolverHelper.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/Append.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/Conditional.java</exclude>
@@ -2602,6 +2626,8 @@
                                 <exclude>src/main/java/org/exist/xupdate/Update.java</exclude>
                                 <exclude>src/main/java/org/exist/xupdate/XUpdateProcessor.java</exclude>
                                 <exclude>src/test/java/org/exist/xupdate/XUpdateTest.java</exclude>
+                                <exclude>src/test/java/xquery/xquery3/XQuery3Tests.java</exclude>
+                                <exclude>src/test/java/xquery/xquery3/transform/XQuery3TransformTests.java</exclude>
                                 <exclude>src/main/resources/xyz/elemental/mediatype/media-type-aliases.xml</exclude>
                                 <exclude>src/main/resources/xyz/elemental/mediatype/media-type-mappings.xml</exclude>
                                 <exclude>src/main/resources/xyz/elemental/mediatype/mime.types</exclude>

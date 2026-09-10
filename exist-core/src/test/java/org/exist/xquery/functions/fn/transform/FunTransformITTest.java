@@ -21,6 +21,8 @@
 package org.exist.xquery.functions.fn.transform;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
+import org.apache.logging.log4j.Logger;
+import org.easymock.Capture;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.security.PermissionDeniedException;
@@ -52,6 +54,11 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
+import static org.easymock.EasyMock.capture;
+import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.newCapture;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
 import static org.junit.Assert.*;
 
 /**
@@ -66,7 +73,7 @@ public class FunTransformITTest {
     private static final String IMPORT_A_XSLT =
         "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"1.0\">\n" +
         "  <xsl:import href=\"b.xsl\"/>\n" +
-        "  <xsl:template match=\"/\">\n" +
+        "  <xsl:template match=\"node()\">\n" +
         "    <doc><p>From A</p><xsl:call-template name=\"from-b\"/></doc>\n" +
         "  </xsl:template>\n" +
         "</xsl:stylesheet>";
@@ -76,28 +83,52 @@ public class FunTransformITTest {
         "  <xsl:template name=\"from-b\"><p>From B</p></xsl:template>\n" +
         "</xsl:stylesheet>";
 
-    private static final String SAME_DIR_IMPORT_VIA_DB_LOCATION_QUERY =
+    private static final String DOCUMENT_SAME_DIR_IMPORT_VIA_DB_LOCATION_QUERY =
         "fn:transform(map {\n" +
         "  \"stylesheet-location\": \"/db/fn-transform-import-test/a.xsl\",\n" +
         "  \"source-node\": document { <empty/> }\n" +
         "})?output";
 
-    private static final String SAME_DIR_IMPORT_VIA_XMLDB_LOCATION_QUERY =
+    private static final String ELEMENT_SAME_DIR_IMPORT_VIA_DB_LOCATION_QUERY =
+        "fn:transform(map {\n" +
+        "  \"stylesheet-location\": \"/db/fn-transform-import-test/a.xsl\",\n" +
+        "  \"source-node\": <empty/>\n" +
+        "})?output";
+
+    private static final String DOCUMENT_SAME_DIR_IMPORT_VIA_XMLDB_LOCATION_QUERY =
         "fn:transform(map {\n" +
         "  \"stylesheet-location\": \"xmldb:exist:///db/fn-transform-import-test/a.xsl\",\n" +
         "  \"source-node\": document { <empty/> }\n" +
         "})?output";
 
-    private static final String SAME_DIR_IMPORT_VIA_DB_NODE_QUERY =
+    private static final String ELEMENT_SAME_DIR_IMPORT_VIA_XMLDB_LOCATION_QUERY =
+        "fn:transform(map {\n" +
+        "  \"stylesheet-location\": \"xmldb:exist:///db/fn-transform-import-test/a.xsl\",\n" +
+        "  \"source-node\": <empty/>\n" +
+        "})?output";
+
+    private static final String DOCUMENT_SAME_DIR_IMPORT_VIA_DB_NODE_QUERY =
         "fn:transform(map {\n" +
         "  \"stylesheet-node\": doc(\"/db/fn-transform-import-test/a.xsl\"),\n" +
         "  \"source-node\": document { <empty/> }\n" +
         "})?output";
 
-    private static final String SAME_DIR_IMPORT_VIA_XMLDB_NODE_QUERY =
+    private static final String ELEMENT_SAME_DIR_IMPORT_VIA_DB_NODE_QUERY =
+        "fn:transform(map {\n" +
+        "  \"stylesheet-node\": doc(\"/db/fn-transform-import-test/a.xsl\"),\n" +
+        "  \"source-node\": <empty/>\n" +
+        "})?output";
+
+    private static final String DOCUMENT_SAME_DIR_IMPORT_VIA_XMLDB_NODE_QUERY =
         "fn:transform(map {\n" +
         "  \"stylesheet-node\": doc(\"xmldb:exist:///db/fn-transform-import-test/a.xsl\"),\n" +
         "  \"source-node\": document { <empty/> }\n" +
+        "})?output";
+
+    private static final String ELEMENT_SAME_DIR_IMPORT_VIA_XMLDB_NODE_QUERY =
+        "fn:transform(map {\n" +
+        "  \"stylesheet-node\": doc(\"xmldb:exist:///db/fn-transform-import-test/a.xsl\"),\n" +
+        "  \"source-node\": <empty/>\n" +
         "})?output";
 
     private static final XmldbURI TEST_IDENTITY_XSLT_COLLECTION = XmldbURI.create("/db/transform-identity-test");
@@ -186,27 +217,51 @@ public class FunTransformITTest {
     public static ExistEmbeddedServer existEmbeddedServer = new ExistEmbeddedServer(true, true);
 
     @Test
-    public void sameDirectoryImportViaDbLocation() throws XPathException, PermissionDeniedException, EXistException, IOException {
+    public void documentSameDirectoryImportViaDbLocation() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
-        expectQuery(SAME_DIR_IMPORT_VIA_DB_LOCATION_QUERY, expected);
+        expectQuery(DOCUMENT_SAME_DIR_IMPORT_VIA_DB_LOCATION_QUERY, expected);
     }
 
     @Test
-    public void sameDirectoryImportViaXmldbLocation() throws XPathException, PermissionDeniedException, EXistException, IOException {
+    public void elementSameDirectoryImportViaDbLocation() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
-        expectQuery(SAME_DIR_IMPORT_VIA_XMLDB_LOCATION_QUERY, expected);
+        expectQuery(ELEMENT_SAME_DIR_IMPORT_VIA_DB_LOCATION_QUERY, expected);
     }
 
     @Test
-    public void sameDirectoryImportViaDbNode() throws XPathException, PermissionDeniedException, EXistException, IOException {
+    public void documentSameDirectoryImportViaXmldbLocation() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
-        expectQuery(SAME_DIR_IMPORT_VIA_DB_NODE_QUERY, expected);
+        expectQuery(DOCUMENT_SAME_DIR_IMPORT_VIA_XMLDB_LOCATION_QUERY, expected);
     }
 
     @Test
-    public void sameDirectoryImportViaXmldbNode() throws XPathException, PermissionDeniedException, EXistException, IOException {
+    public void elementSameDirectoryImportViaXmldbLocation() throws XPathException, PermissionDeniedException, EXistException, IOException {
         final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
-        expectQuery(SAME_DIR_IMPORT_VIA_XMLDB_NODE_QUERY, expected);
+        expectQuery(ELEMENT_SAME_DIR_IMPORT_VIA_XMLDB_LOCATION_QUERY, expected);
+    }
+
+    @Test
+    public void documentSameDirectoryImportViaDbNode() throws XPathException, PermissionDeniedException, EXistException, IOException {
+        final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
+        expectQuery(DOCUMENT_SAME_DIR_IMPORT_VIA_DB_NODE_QUERY, expected);
+    }
+
+    @Test
+    public void elementSameDirectoryImportViaDbNode() throws XPathException, PermissionDeniedException, EXistException, IOException {
+        final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
+        expectQuery(ELEMENT_SAME_DIR_IMPORT_VIA_DB_NODE_QUERY, expected);
+    }
+
+    @Test
+    public void documentSameDirectoryImportViaXmldbNode() throws XPathException, PermissionDeniedException, EXistException, IOException {
+        final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
+        expectQuery(DOCUMENT_SAME_DIR_IMPORT_VIA_XMLDB_NODE_QUERY, expected);
+    }
+
+    @Test
+    public void elementSameDirectoryImportViaXmldbNode() throws XPathException, PermissionDeniedException, EXistException, IOException {
+        final Source expected = Input.fromString("<doc><p>From A</p><p>From B</p></doc>").build();
+        expectQuery(ELEMENT_SAME_DIR_IMPORT_VIA_XMLDB_NODE_QUERY, expected);
     }
 
     @Test
@@ -245,6 +300,50 @@ public class FunTransformITTest {
         // Attribute reference
         expected = Input.fromString("<mixed i=\"j\" x=\"y\"/>").build();
         expectQuery(IDENTITY_MIXED_XSLT_QUERY_5, expected);
+    }
+
+    @Test
+    public void xslMessageIsLogged() throws EXistException, PermissionDeniedException, IOException, XPathException {
+
+        // set a mock logger so we can capture the log output for our test
+        final Logger mockLogger = createMock(Logger.class);
+        Transform.setLogger(mockLogger);
+
+        // expectations
+        final Capture<String> formatPattern = newCapture();
+        final Capture<String> startTagCapture = newCapture();
+        final Capture<String> logMessageCapture = newCapture();
+        mockLogger.info(capture(formatPattern), capture(startTagCapture), capture(logMessageCapture));
+
+        // reset mock state before test
+        replay(mockLogger);
+
+        // execute test
+        final String query =
+            "fn:transform(map {\n" +
+            "  \"stylesheet-text\": '<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"2.0\">\n" +
+            "    <xsl:template match=\"/\">\n" +
+            "      <xsl:message>Hello from XSLT</xsl:message>\n" +
+            "    </xsl:template>\n" +
+            "  </xsl:stylesheet>',\n" +
+            "  \"source-node\": document { <in/> }\n" +
+            "})?output";
+
+        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        try (final DBBroker broker = pool.get(Optional.of(pool.getSecurityManager().getSystemSubject()));
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            assertNotNull(queryResult.result);
+        }
+
+        // verify our expectations
+        verify(mockLogger);
+
+        // check our assertions about the log message
+        final String startTag = startTagCapture.getValue();
+        final String message = logMessageCapture.getValue();
+
+        assertEquals("<xsl:message terminate=\"false\" sourceLine=\"3\" sourceColumn=\"20\">", startTag);
+        assertEquals("Hello from XSLT", message);
     }
 
     private static void expectQuery(final String query, final Source expected) throws EXistException, XPathException, PermissionDeniedException, IOException {

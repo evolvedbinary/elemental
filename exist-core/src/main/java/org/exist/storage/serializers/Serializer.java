@@ -52,7 +52,6 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 import javax.annotation.Nullable;
-import javax.xml.XMLConstants;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import javax.xml.transform.Templates;
@@ -312,6 +311,7 @@ public abstract class Serializer implements XMLReader {
         }
     }
 
+    @Override
     public void setProperty(final String prop, final Object value)
             throws SAXNotRecognizedException, SAXNotSupportedException {
         switch (prop) {
@@ -378,10 +378,12 @@ public abstract class Serializer implements XMLReader {
      *
      * @return The entityResolver value
      */
+    @Override
     public @Nullable EntityResolver getEntityResolver() {
         return entityResolver;
     }
 
+    @Override
     public @Nullable ErrorHandler getErrorHandler() {
         return errorHandler;
     }
@@ -405,6 +407,7 @@ public abstract class Serializer implements XMLReader {
         return user;
     }
 
+    @Override
     public boolean getFeature(final String name)
             throws SAXNotRecognizedException, SAXNotSupportedException {
         if (name.equals(Namespaces.SAX_NAMESPACES)
@@ -414,6 +417,7 @@ public abstract class Serializer implements XMLReader {
         throw new SAXNotRecognizedException(name);
     }
 
+    @Override
     public Object getProperty(final String name)
             throws SAXNotRecognizedException, SAXNotSupportedException {
         if (name.equals(Namespaces.SAX_LEXICAL_HANDLER)) {
@@ -429,13 +433,20 @@ public abstract class Serializer implements XMLReader {
         return null;
     }
 
+    @Override
     public void parse(final InputSource input) throws IOException, SAXException {
-        // only system-ids are handled
-        final String doc = input.getSystemId();
-        if (doc == null) {
-            throw new SAXException("source is not an eXist document");
+        if (input instanceof NodeValueInputSource) {
+            final NodeValue nodeValue = ((NodeValueInputSource) input).getNodeValue();
+            toSAX(nodeValue);
+
+        } else {
+            // fallback to trying to parse from the systemId
+            @Nullable final String systemId = input.getSystemId();
+            if (systemId == null) {
+                throw new SAXException("Source's systemId is null");
+            }
+            parse(systemId);
         }
-        parse(doc);
     }
 
     protected void setDocument(final DocumentImpl doc) {
@@ -448,20 +459,26 @@ public abstract class Serializer implements XMLReader {
         }
     }
 
+    @Override
     public void parse(final String systemId) throws IOException, SAXException {
+        if (systemId == null) {
+            throw new SAXException("systemId is null");
+        }
+
         try {
-            // try to load document from eXist
-            //TODO: this systemId came from exist, so should be an unchecked create, right?
-            final DocumentImpl doc = broker.getResource(XmldbURI.create(systemId), Permission.READ);
+            // assume the systemId is a URI to a document in the database
+            @Nullable final DocumentImpl doc = broker.getResource(XmldbURI.create(systemId), Permission.READ);
             if (doc == null) {
-                throw new SAXException("document " + systemId + " not found in database");
-            } else {
-                LOG.debug("serializing {}", doc.getFileURI());
+                throw new SAXException("Document " + systemId + " not found in the database");
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Serializing {}", doc.getFileURI());
             }
 
             toSAX(doc);
         } catch (final PermissionDeniedException e) {
-            throw new SAXException("permission denied");
+            throw new SAXException("Permission denied to read document + " + systemId + ": " + e.getMessage(), e);
         }
     }
 
@@ -715,9 +732,19 @@ public abstract class Serializer implements XMLReader {
      * @param contentHandler the content handler
      * @param lexicalHandler the lexical handle
      */
-    public void setSAXHandlers(final ContentHandler contentHandler, final LexicalHandler lexicalHandler) {
+    public void setSAXHandlers(final ContentHandler contentHandler, @Nullable LexicalHandler lexicalHandler) {
         final ReceiverToSAX toSAX = new ReceiverToSAX(contentHandler);
-        toSAX.setLexicalHandler(lexicalHandler);
+
+        if (lexicalHandler != null) {
+            this.lexicalHandler = lexicalHandler;
+        }
+        if (this.lexicalHandler == null && contentHandler instanceof LexicalHandler) {
+            this.lexicalHandler = (LexicalHandler) contentHandler;
+        }
+        if (this.lexicalHandler != null) {
+            toSAX.setLexicalHandler(this.lexicalHandler);
+        }
+
         if ("yes".equals(getProperty(EXistOutputKeys.EXPAND_XINCLUDES, "yes"))) {
             xinclude.setReceiver(toSAX);
             receiver = xinclude;
@@ -758,6 +785,7 @@ public abstract class Serializer implements XMLReader {
      *
      * @param entityResolver The new entityResolver value
      */
+    @Override
     public void setEntityResolver(@Nullable final EntityResolver entityResolver) {
         this.entityResolver = entityResolver;
     }
@@ -767,6 +795,7 @@ public abstract class Serializer implements XMLReader {
      *
      * @param errorHandler The new errorHandler value
      */
+    @Override
     public void setErrorHandler(@Nullable final ErrorHandler errorHandler) {
         this.errorHandler = errorHandler;
     }
@@ -779,11 +808,17 @@ public abstract class Serializer implements XMLReader {
      * @throws SAXNotRecognizedException Description of the Exception
      * @throws SAXNotSupportedException  Description of the Exception
      */
-    public void setFeature(final String name, final boolean value)
-            throws SAXNotRecognizedException, SAXNotSupportedException {
-        if (name.equals(Namespaces.SAX_NAMESPACES) || name.equals(Namespaces.SAX_NAMESPACES_PREFIXES)) {
-            throw new SAXNotSupportedException(name);
+    @Override
+    public void setFeature(final String name, final boolean value) throws SAXNotRecognizedException, SAXNotSupportedException {
+        if (Namespaces.SAX_NAMESPACES.equals(name) || Namespaces.SAX_NAMESPACES_PREFIXES.equals(name)) {
+            return;
         }
+
+        if (FeatureKeys.EXPAND_XINCLUDES.equals(name)) {
+            setProperty(EXistOutputKeys.EXPAND_XINCLUDES, value ? "yes" : "no");
+            return;
+        }
+
         throw new SAXNotRecognizedException(name);
     }
 

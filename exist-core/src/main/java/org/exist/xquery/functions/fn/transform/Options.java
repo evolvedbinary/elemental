@@ -47,6 +47,7 @@ package org.exist.xquery.functions.fn.transform;
 
 import com.evolvedbinary.j8fu.tuple.Tuple2;
 import io.lacuna.bifurcan.IEntry;
+import io.lacuna.bifurcan.IMap;
 import net.jpountz.xxhash.XXHash64;
 import net.jpountz.xxhash.XXHashFactory;
 import net.sf.saxon.expr.parser.RetainedStaticContext;
@@ -54,14 +55,16 @@ import net.sf.saxon.functions.SystemProperty;
 import net.sf.saxon.s9api.QName;
 import net.sf.saxon.s9api.XdmValue;
 import org.exist.dom.memtree.NamespaceNode;
+import org.exist.storage.serializers.EXistOutputKeys;
+import org.exist.storage.serializers.FeatureKeys;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.ErrorCodes;
+import org.exist.xquery.Expression;
 import org.exist.xquery.XPathException;
-import org.exist.xquery.XQueryContext;
 import org.exist.xquery.functions.array.ArrayType;
-import org.exist.xquery.functions.fn.FnTransform;
 import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.*;
+import org.exist.xslt.SaxonConfiguration;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
@@ -98,7 +101,7 @@ import static org.exist.xquery.functions.fn.transform.Options.Option.*;
  * This is a bit clearer where we need an option several times,
  * we know we have read it up front.
  */
-class Options {
+public class Options {
 
     static final javax.xml.namespace.QName QN_XSL_STYLESHEET = new javax.xml.namespace.QName(XSL_NS, "stylesheet");
     static final javax.xml.namespace.QName QN_VERSION = new javax.xml.namespace.QName("version");
@@ -144,27 +147,27 @@ class Options {
 
     final Optional<FunctionReference> postProcess;
 
-    private final XQueryContext context;
-    private final FnTransform fnTransform;
+    private final Expression callingExpression;
+    final SaxonConfiguration saxonConfiguration;
     private final Convert.ToSaxon toSaxon;
 
     private final SystemProperties systemProperties;
 
-    Options(final XQueryContext context, final FnTransform fnTransform, final Convert.ToSaxon toSaxon, final MapType options) throws XPathException {
-        this.context = context;
-        this.fnTransform = fnTransform;
+    public Options(final Expression callingExpression, final SaxonConfiguration saxonConfiguration, final Convert.ToSaxon toSaxon, final MapType options) throws XPathException {
+        this.callingExpression = callingExpression;
+        this.saxonConfiguration = saxonConfiguration;
         this.toSaxon = toSaxon;
-        this.systemProperties = new SystemProperties(context);
+        this.systemProperties = new SystemProperties(saxonConfiguration);
 
         xsltSource = getStylesheet(options);
 
-        stylesheetParams = Options.STYLESHEET_PARAMS.get(options).orElse(new MapType(context));
+        stylesheetParams = Options.STYLESHEET_PARAMS.get(options).orElse(new MapType(callingExpression.getContext()));
         for (final IEntry<AtomicValue, Sequence> entry : stylesheetParams) {
             if (!(entry.key() instanceof QNameValue)) {
-                throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "Supplied stylesheet-param is not a valid xs:qname: " + entry);
+                throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "Supplied stylesheet-param is not a valid xs:qname: " + entry);
             }
             if (entry.value() == null) {
-                throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "Supplied stylesheet-param is not a valid xs:sequence: " + entry);
+                throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "Supplied stylesheet-param is not a valid xs:sequence: " + entry);
             }
         }
 
@@ -173,10 +176,10 @@ class Options {
             try {
                 xsltVersion = XSLTVersion.fromDecimal(explicitXsltVersion.get().getValue());
                 if (xsltVersion.equals(V1_0) && xsltVersion.equals(V2_0) && xsltVersion.equals(V3_0)) {
-                    throw new XPathException(fnTransform, ErrorCodes.FOXT0001, "Supplied xslt-version is an unknown XSLT version: " + explicitXsltVersion.get());
+                    throw new XPathException(callingExpression, ErrorCodes.FOXT0001, "Supplied xslt-version is an unknown XSLT version: " + explicitXsltVersion.get());
                 }
             } catch (final Transform.PendingException pe) {
-                throw new XPathException(fnTransform, ErrorCodes.FOXT0001, "Supplied xslt-version is an unknown XSLT version: " + explicitXsltVersion.get());
+                throw new XPathException(callingExpression, ErrorCodes.FOXT0001, "Supplied xslt-version is an unknown XSLT version: " + explicitXsltVersion.get());
             }
         } else {
             xsltVersion = getXsltVersion(xsltSource._2);
@@ -190,7 +193,7 @@ class Options {
             stylesheetBaseUri = xsltSource._1;
         }
         if (notNullOrEmpty(stylesheetBaseUri)) {
-            resolvedStylesheetBaseURI = Optional.of(resolveURI(new AnyURIValue(stylesheetBaseUri), context.getBaseURI()));
+            resolvedStylesheetBaseURI = Optional.of(resolveURI(new AnyURIValue(stylesheetBaseUri), callingExpression.getContext().getBaseURI()));
         } else {
             resolvedStylesheetBaseURI = Optional.empty();
         }
@@ -223,7 +226,7 @@ class Options {
 
         serializationParams = Options.SERIALIZATION_PARAMS.get(xsltVersion, options);
 
-        validateRequestedProperties(Options.REQUESTED_PROPERTIES.get(xsltVersion, options).orElse(new MapType(context)));
+        validateRequestedProperties(Options.REQUESTED_PROPERTIES.get(xsltVersion, options).orElse(new MapType(callingExpression.getContext())));
 
         postProcess = Options.POST_PROCESS.get(xsltVersion, options);
 
@@ -244,14 +247,14 @@ class Options {
 
         final Map<net.sf.saxon.s9api.QName, XdmValue> result = new HashMap<>();
 
-        final MapType paramsMap = option.orElse(new MapType(context));
+        final MapType paramsMap = option.orElse(new MapType(callingExpression.getContext()));
         for (final IEntry<AtomicValue, Sequence> entry : paramsMap) {
             final AtomicValue key = entry.key();
             if (!(key instanceof QNameValue)) {
-                throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "Supplied " + name + " is not a valid xs:qname: " + entry);
+                throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "Supplied " + name + " is not a valid xs:qname: " + entry);
             }
             if (entry.value() == null) {
-                throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "Supplied " + name + " is not a valid xs:sequence: " + entry);
+                throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "Supplied " + name + " is not a valid xs:sequence: " + entry);
             }
             result.put(Convert.ToSaxon.of((QNameValue) key), toSaxon.of(entry.value()));
         }
@@ -264,7 +267,7 @@ class Options {
         try {
             format = Delivery.Format.valueOf(deliveryFormatString);
         } catch (final IllegalArgumentException ie) {
-            throw new XPathException(fnTransform, ErrorCodes.FOXT0002,
+            throw new XPathException(callingExpression, ErrorCodes.FOXT0002,
                     ": \"" + deliveryFormatString + "\" is not a valid " + Options.DELIVERY_FORMAT.name);
         }
         return format;
@@ -356,17 +359,17 @@ class Options {
             Type.MAP_ITEM,"requested-properties", V1_0, V2_0, V3_0);
     private static final Option<MapType> SERIALIZATION_PARAMS = new ItemOption<>(
             Type.MAP_ITEM,"serialization-params", V1_0, V2_0, V3_0);
-    static final Option<NodeValue> SOURCE_NODE = new ItemOption<>(
+    public static final Option<NodeValue> SOURCE_NODE = new ItemOption<>(
             Type.NODE,"source-node", V1_0, V2_0, V3_0);
     private static final Option<MapType> STATIC_PARAMS = new ItemOption<>(
             Type.MAP_ITEM,"static-params", V3_0);
     private static final Option<StringValue> STYLESHEET_BASE_URI = new ItemOption<>(
             Type.STRING, "stylesheet-base-uri", V1_0, V2_0, V3_0);
-    static final Option<StringValue> STYLESHEET_LOCATION = new ItemOption<>(
+    public static final Option<StringValue> STYLESHEET_LOCATION = new ItemOption<>(
             Type.STRING,"stylesheet-location", V1_0, V2_0, V3_0);
-    static final Option<NodeValue> STYLESHEET_NODE = new ItemOption<>(
+    public static final Option<NodeValue> STYLESHEET_NODE = new ItemOption<>(
             Type.NODE,"stylesheet-node", V1_0, V2_0, V3_0);
-    private static final Option<MapType> STYLESHEET_PARAMS = new ItemOption<>(
+    public static final Option<MapType> STYLESHEET_PARAMS = new ItemOption<>(
             Type.MAP_ITEM,"stylesheet-params", V1_0, V2_0, V3_0);
     static final Option<StringValue> STYLESHEET_TEXT = new ItemOption<>(
             Type.STRING,"stylesheet-text", V1_0, V2_0, V3_0);
@@ -374,29 +377,39 @@ class Options {
             Type.MAP_ITEM,"template-params", V3_0);
     private static final Option<MapType> TUNNEL_PARAMS = new ItemOption<>(
             Type.MAP_ITEM,"tunnel-params", V3_0);
-    private static final Option<MapType> VENDOR_OPTIONS = new ItemOption<>(
+    public static final Option<MapType> VENDOR_OPTIONS = new ItemOption<>(
             Type.MAP_ITEM,"vendor-options", V1_0, V2_0, V3_0);
     private static final Option<DecimalValue> XSLT_VERSION = new ItemOption<>(
             Type.DECIMAL,"xslt-version", V1_0, V2_0, V3_0);
 
-    abstract static class Option<T> {
+    // Elemental vendor options
+    public static final VendorOption<BooleanValue> EXPAND_XINCLUDES = new VendorItemOption<>(
+            Type.BOOLEAN, EXistOutputKeys.EXPAND_XINCLUDES, BooleanValue.FALSE, V1_0, V2_0, V3_0);
+    public static final VendorOption<StringValue> XINCLUDE_PATH = new VendorItemOption<>(
+            Type.STRING, EXistOutputKeys.XINCLUDE_PATH, V1_0, V2_0, V3_0);
+
+    public abstract static class AbstractOption<K extends AtomicValue, V> {
         public static final XSLTVersion V1_0 = new XSLTVersion(1,0);
         public static final XSLTVersion V2_0 = new XSLTVersion(2,0);
         public static final XSLTVersion V3_0 = new XSLTVersion(3,0);
 
-        protected final StringValue name;
-        protected final Optional<T> defaultValue;
+        protected final K name;
+        protected final Optional<V> defaultValue;
         protected final XSLTVersion[] appliesToVersions;
         protected final int itemSubtype;
 
-        private Option(final int itemSubtype, final String name, final Optional<T> defaultValue, final XSLTVersion... appliesToVersions) {
-            this.name = new StringValue(name);
+        private AbstractOption(final int itemSubtype, final K name, final Optional<V> defaultValue, final XSLTVersion... appliesToVersions) {
+            this.name = name;
             this.defaultValue = defaultValue;
             this.appliesToVersions = appliesToVersions;
             this.itemSubtype = itemSubtype;
         }
 
-        public abstract Optional<T> get(final MapType options) throws XPathException;
+        public abstract Optional<V> get(final MapType options) throws XPathException;
+
+        public abstract MapType set(final MapType options, final V value);
+
+        public abstract IMap<AtomicValue, Sequence> set(final IMap<AtomicValue, Sequence> options, final V value);
 
         private boolean notApplicableToVersion(final XSLTVersion xsltVersion) {
             for (final XSLTVersion appliesToVersion : appliesToVersions) {
@@ -407,12 +420,18 @@ class Options {
             return true;
         }
 
-        public Optional<T> get(final XSLTVersion xsltVersion, final MapType options) throws XPathException {
+        public Optional<V> get(final XSLTVersion xsltVersion, final MapType options) throws XPathException {
             if (notApplicableToVersion(xsltVersion)) {
                 return Optional.empty();
             }
 
             return get(options);
+        }
+    }
+
+    public abstract static class Option<V> extends AbstractOption<StringValue, V> {
+        private Option(final int itemSubtype, final String name, final Optional<V> defaultValue, final XSLTVersion... appliesToVersions) {
+            super(itemSubtype, new StringValue(name), defaultValue, appliesToVersions);
         }
     }
 
@@ -449,6 +468,16 @@ class Options {
             }
             return defaultValue;
         }
+
+        @Override
+        public MapType set(final MapType options, final T value) {
+            return options.put(name, value);
+        }
+
+        @Override
+        public IMap<AtomicValue, Sequence> set(final IMap<AtomicValue, Sequence> options, final T value) {
+            return options.put(name, value);
+        }
     }
 
     static class ItemOption<T extends Item> extends Option<T> {
@@ -477,6 +506,60 @@ class Options {
                 }
             }
             return defaultValue;
+        }
+
+        @Override
+        public MapType set(final MapType options, final T value) {
+            return options.put(name, (Sequence) value);
+        }
+
+        @Override
+        public IMap<AtomicValue, Sequence> set(final IMap<AtomicValue, Sequence> options, final T value) {
+            return options.put(name, (Sequence) value);
+        }
+    }
+
+    public abstract static class VendorOption<V> extends AbstractOption<QNameValue, V> {
+        private VendorOption(final int itemSubtype, final String name, final Optional<V> defaultValue, final XSLTVersion... appliesToVersions) {
+            super(itemSubtype, new QNameValue(null, new org.exist.dom.QName(name, FeatureKeys.NS)), defaultValue, appliesToVersions);
+        }
+    }
+
+    static class VendorItemOption<T extends Item> extends VendorOption<T> {
+        public VendorItemOption(final int itemSubtype, final String name, final XSLTVersion... appliesToVersions) {
+            super(itemSubtype, name, Optional.empty(), appliesToVersions);
+        }
+
+        public VendorItemOption(final int itemSubtype, final String name, @Nullable final T defaultValue, final XSLTVersion... appliesToVersions) {
+            super(itemSubtype, name, Optional.ofNullable(defaultValue), appliesToVersions);
+        }
+
+        @Override
+        public Optional<T> get(final MapType options) throws XPathException {
+            if (options.contains(name)) {
+                final Item item0 = options.get(name).itemAt(0);
+                if (item0 != null) {
+                    if (Type.subTypeOf(item0.getType(), itemSubtype)) {
+                        return Optional.of((T) item0);
+                    } else if (itemSubtype == Type.STRING && Type.subTypeOf(item0.getType(), Type.ANY_ATOMIC_TYPE)) {
+                        return Optional.of((T)new StringValue(item0.getStringValue()));
+                    } else {
+                        throw new XPathException(
+                                ErrorCodes.XPTY0004, "Type error: expected " + Type.getTypeName(itemSubtype) + ", got " + Type.getTypeName(item0.getType()));
+                    }
+                }
+            }
+            return defaultValue;
+        }
+
+        @Override
+        public MapType set(final MapType options, final T value) {
+            return options.put(name, (Sequence) value);
+        }
+
+        @Override
+        public IMap<AtomicValue, Sequence> set(final IMap<AtomicValue, Sequence> options, final T value) {
+            return options.put(name, (Sequence) value);
         }
     }
 
@@ -510,11 +593,11 @@ class Options {
         stylesheetText.ifPresent(s -> results.add(Tuple("", new StringSource(s))));
 
         if (results.size() > 1) {
-            throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "More than one of stylesheet-location, stylesheet-node, and stylesheet-text was set");
+            throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "More than one of stylesheet-location, stylesheet-node, and stylesheet-text was set");
         }
 
         if (results.isEmpty()) {
-            throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "None of stylesheet-location, stylesheet-node, or stylesheet-text was set");
+            throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "None of stylesheet-location, stylesheet-node, or stylesheet-text was set");
         }
 
         return results.get(0);
@@ -534,10 +617,10 @@ class Options {
 
         final URI uri = URI.create(stylesheetLocation);
         if (uri.isAbsolute()) {
-            return URIResolution.resolveDocument(stylesheetLocation, context, fnTransform);
+            return URIResolution.resolveDocument(callingExpression, stylesheetLocation);
         } else {
-            final AnyURIValue resolved = resolveURI(new AnyURIValue(stylesheetLocation), context.getBaseURI());
-            return URIResolution.resolveDocument(resolved.getStringValue(), context, fnTransform);
+            final AnyURIValue resolved = resolveURI(new AnyURIValue(stylesheetLocation), callingExpression.getContext().getBaseURI());
+            return URIResolution.resolveDocument(callingExpression, resolved.getStringValue());
         }
     }
 
@@ -552,7 +635,7 @@ class Options {
         try {
             return URIResolution.resolveURI(relative, base);
         } catch (final URISyntaxException e) {
-            throw new XPathException(fnTransform, ErrorCodes.FORG0009, "unable to resolve a relative URI against a base URI in fn:transform(): " + e.getMessage(), null, e);
+            throw new XPathException(callingExpression, ErrorCodes.FORG0009, "unable to resolve a relative URI against a base URI in fn:transform(): " + e.getMessage(), null, e);
         }
     }
 
@@ -564,7 +647,7 @@ class Options {
             return staxExtractXsltVersion(xsltStylesheet);
         }
 
-        throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "Unable to extract version from XSLT, unrecognised source");
+        throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "Unable to extract version from XSLT, unrecognised source");
     }
 
     private XSLTVersion domExtractXsltVersion(final Source xsltStylesheet) throws XPathException {
@@ -597,13 +680,13 @@ class Options {
         }
 
         if (version.isEmpty()) {
-            throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "Unable to extract version from XSLT via DOM");
+            throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "Unable to extract version from XSLT via DOM");
         }
 
         try {
             return XSLTVersion.fromDecimal(new BigDecimal(version));
         } catch (final Transform.PendingException pe) {
-            throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "Unable to extract version from XSLT via DOM. Value: " + version + " : " + pe.getMessage());
+            throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "Unable to extract version from XSLT via DOM. Value: " + version + " : " + pe.getMessage());
         }
     }
 
@@ -627,10 +710,10 @@ class Options {
                 }
             }
         } catch (final XMLStreamException | Transform.PendingException e) {
-            throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "Unable to extract version from XSLT via STaX: " + e.getMessage(), Sequence.EMPTY_SEQUENCE, e);
+            throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "Unable to extract version from XSLT via STaX: " + e.getMessage(), Sequence.EMPTY_SEQUENCE, e);
         }
 
-        throw new XPathException(fnTransform, ErrorCodes.FOXT0002, "Unable to extract version from XSLT via STaX");
+        throw new XPathException(callingExpression, ErrorCodes.FOXT0002, "Unable to extract version from XSLT via STaX");
     }
 
     private static class StringSource extends StreamSource {
@@ -651,9 +734,8 @@ class Options {
 
         private final RetainedStaticContext retainedStaticContext;
 
-        private SystemProperties(final XQueryContext context) {
-            final var saxonConfiguration = context.getBroker().getBrokerPool().getSaxonConfiguration();
-            this.retainedStaticContext = new RetainedStaticContext(saxonConfiguration);
+        private SystemProperties(final SaxonConfiguration saxonConfiguration) {
+            this.retainedStaticContext = new RetainedStaticContext(saxonConfiguration.getConfiguration());
         }
 
         String get(final org.exist.dom.QName qName) {

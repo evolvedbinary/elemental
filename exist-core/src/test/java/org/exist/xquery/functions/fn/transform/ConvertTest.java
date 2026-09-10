@@ -65,12 +65,7 @@ public class ConvertTest {
     private static final Configuration SAXON_CONFIGURATION = new Configuration();
     private static final Processor SAXON_PROCESSOR = new Processor(SAXON_CONFIGURATION);
 
-    static final Convert.ToSaxon toSaxon = new Convert.ToSaxon() {
-        @Override
-        DocumentBuilder newDocumentBuilder() {
-            return SAXON_PROCESSOR.newDocumentBuilder();
-        }
-    };
+    static final Convert.ToSaxon toSaxon = new Convert.ToSaxon(SAXON_PROCESSOR);
 
     @Test
     public void memtreeDocumentToSaxon() throws XPathException {

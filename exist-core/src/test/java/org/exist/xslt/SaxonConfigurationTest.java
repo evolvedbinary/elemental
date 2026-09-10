@@ -45,44 +45,39 @@
  */
 package org.exist.xslt;
 
-import java.io.InputStream;
-import java.io.Reader;
+import net.sf.saxon.s9api.Processor;
+import org.exist.storage.BrokerPool;
+import org.exist.test.ExistEmbeddedServer;
+import org.exist.util.Configuration;
+import org.junit.ClassRule;
+import org.junit.Test;
 
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.storage.DBBroker;
-import org.xml.sax.InputSource;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@link org.xml.sax.InputSource} identifying a document within the eXist database.
- *
- * @author <a href="mailto:Paul.L.Merchant.Jr@dartmouth.edu">Paul Merchant, Jr.</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
+ * @author <a href="mailto:alan@evolvedbinary.com">Alan Paxton</a>
  */
+public class SaxonConfigurationTest {
 
-public class EXistDbInputSource extends InputSource {
-    private final DBBroker broker;
-    private final DocumentImpl doc;
-    
-    public EXistDbInputSource(final DBBroker broker, final DocumentImpl doc) {
-        super(doc.getBaseURI());
-        this.broker = broker;
-        this.doc = doc;
-    }
+  @ClassRule
+  public static final ExistEmbeddedServer EXIST_EMBEDDED_SERVER = new ExistEmbeddedServer(true, true);
 
-    public DBBroker getBroker() {
-        return this.broker;
-    }
-    
-    public DocumentImpl getDocument() {
-        return this.doc;
-    }
-    
-    @Override
-    public void setByteStream(InputStream stream) {
-        throw new UnsupportedOperationException();
-    }
+  @Test
+  public void configFromBroker() {
+    final BrokerPool brokerPool = EXIST_EMBEDDED_SERVER.getBrokerPool();
 
-    @Override
-    public void setCharacterStream(Reader stream) {
-        throw new UnsupportedOperationException();
-    }    
+    final Configuration elementalConfiguration = brokerPool.getConfiguration();
+    assertThat(elementalConfiguration.getProperty("saxon.configuration")).isEqualTo("saxon-config.xml");
+
+    final SaxonConfiguration saxonConfiguration = SaxonConfiguration.getConfiguration(elementalConfiguration, null);
+
+    // There is no way to install EE at the test/build phase.
+    // Sanity check is to confirm this does indeed return "HE" (Home Edition).
+    final Processor saxonProcessor = saxonConfiguration.getProcessor();
+    assertThat(saxonProcessor.getSaxonEdition()).isEqualTo("HE");
+
+    final SaxonConfiguration saxonConfiguration2 = SaxonConfiguration.getConfiguration(elementalConfiguration, null);
+    assertThat(saxonConfiguration2).isSameAs(saxonConfiguration);
+  }
 }
