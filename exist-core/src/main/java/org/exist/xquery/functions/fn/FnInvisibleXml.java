@@ -29,11 +29,13 @@ import static org.exist.xquery.FunctionDSL.param;
 import static org.exist.xquery.FunctionDSL.returns;
 
 import com.evolvedbinary.j8fu.Either;
+import com.github.krukow.clj_lang.Obj;
 import org.exist.Namespaces;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.dom.memtree.SAXAdapter;
 import org.exist.util.XMLReaderPool;
+import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xquery.*;
-import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Element;
 import org.xml.sax.*;
@@ -43,6 +45,8 @@ import de.bottlecaps.markup.Blitz;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Map;
+import java.util.Properties;
 
 public class FnInvisibleXml extends BasicFunction {
 
@@ -53,8 +57,7 @@ public class FnInvisibleXml extends BasicFunction {
             "Evaluates invisible XML.",
             returns(Type.FUNCTION, "The iXML parsing function"),
             optParam("grammar", Type.ITEM, "The iXML grammar"),
-            optParam("options", Type.MAP_ITEM, "Options for the iXML parser")
-    );
+            optParam("options", Type.MAP_ITEM, "Options for the iXML parser"));
 
     public FnInvisibleXml(final XQueryContext context, final FunctionSignature signature) {
         super(context, signature);
@@ -63,11 +66,12 @@ public class FnInvisibleXml extends BasicFunction {
     @Override
     public Sequence eval(final Sequence[] args, final Sequence contextSequence) throws XPathException {
         final Sequence optionsArg = args[1];
-        @Nullable final MapType options;
+        @Nullable
+        final Map<Object, Object> options;
         if (optionsArg.isEmpty()) {
             options = null;
         } else {
-            options = optionsArg.itemAt(0).toJavaObject(MapType.class);
+            options = (Map<Object, Object>) optionsArg.itemAt(0).toJavaObject(Map.class);
         }
 
         final IxmlParserFunction fn;
@@ -83,12 +87,12 @@ public class FnInvisibleXml extends BasicFunction {
 
         } else {
             // grammar is an element
-            final Element grammarElement = grammarArg.itemAt(0).toJavaObject(Element.class);
-            fn = new IxmlParserFunction(context, grammarElement, options);
+            final Element grammarItem = grammarArg.itemAt(0).toJavaObject(Element.class);
+            fn = new IxmlParserFunction(context, grammarItem, options);
         }
 
-        final InlineFunction functionResult = new InlineFunction(context, fn);
-        return functionResult.eval(contextSequence, null);
+        final FunctionCall invisibleXmlFunctionCall = new FunctionCall(context, fn);
+        return new FunctionReference(invisibleXmlFunctionCall);
     }
 
     private static class IxmlParserFunction extends UserDefinedFunction {
@@ -98,19 +102,22 @@ public class FnInvisibleXml extends BasicFunction {
                 FS_PARSE_INVISIBLE_XML_NAME,
                 "Gets the next random number generator.",
                 returns(Type.DOCUMENT, "just a random string for now"),
-                param("Parser inpuit", Type.STRING, "param description")
-        );
+                param("Parser inpuit", Type.STRING, "param description"));
 
-        @Nullable final Either<StringValue, Element> grammar;
-        @Nullable final MapType options;
+        @Nullable
+        final Either<StringValue, Element> grammar;
+        @Nullable
+        final Map<Object, Object> options;
 
-        IxmlParserFunction(final XQueryContext context, @Nullable final StringValue grammar, @Nullable final MapType options) {
+        IxmlParserFunction(final XQueryContext context, @Nullable final StringValue grammar,
+                @Nullable final Map<Object, Object> options) {
             super(context, FS_PARSE_INVISIBLE_XML);
             this.grammar = Left(grammar);
             this.options = options;
         }
 
-        IxmlParserFunction(final XQueryContext context, @Nullable final Element grammar, @Nullable final MapType options) {
+        IxmlParserFunction(final XQueryContext context, @Nullable final Element grammar,
+                @Nullable final Map<Object, Object> options) {
             super(context, FS_PARSE_INVISIBLE_XML);
             this.grammar = Right(grammar);
             this.options = options;
@@ -120,7 +127,7 @@ public class FnInvisibleXml extends BasicFunction {
         public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
 
             // get the input
-            final Sequence inputArg = getArguments(contextSequence, contextItem)[0];
+            final Sequence inputArg = getCurrentArguments()[0];
             final String input = inputArg.itemAt(0).getStringValue();
 
             // generate the default ixml grammar
@@ -130,8 +137,15 @@ public class FnInvisibleXml extends BasicFunction {
             } else if (grammar.isLeft()) {
                 ixmlGrammar = grammar.left().get().getStringValue();
             } else {
-                // TODO(YB) use XQuerySerializer class to serialize Element to String
-                ixmlGrammar = ...
+                // grammar is an element: serialize it to a String
+                try (final StringBuilderWriter writer = new StringBuilderWriter()) {
+                    final XQuerySerializer xqSerializer = new XQuerySerializer(
+                            context.getBroker(), new Properties(), writer);
+                    xqSerializer.serialize((Sequence) grammar.right().get());
+                    ixmlGrammar = writer.toString();
+                } catch (final SAXException e) {
+                    throw new XPathException(this, e.getMessage(), e);
+                }
             }
 
             // TODO(YB) set any options
@@ -140,6 +154,14 @@ public class FnInvisibleXml extends BasicFunction {
             final String generatedXML = Blitz.generate(ixmlGrammar).parse(input);
 
             return parse(generatedXML);
+        }
+
+        @Override
+        public void accept(final ExpressionVisitor visitor) {
+            if (visited) {
+                return;
+            }
+            visited = true;
         }
 
         private Sequence parse(final String xmlContent) throws XPathException {
