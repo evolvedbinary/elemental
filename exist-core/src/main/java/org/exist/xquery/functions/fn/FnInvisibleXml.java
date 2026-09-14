@@ -154,10 +154,18 @@ public class FnInvisibleXml extends BasicFunction {
                 }
             }
 
-            // TODO(YB) set any options
+            boolean failOnError = false;
+            if (options != null) {
+                failOnError = Boolean.TRUE.equals(options.get("fail-on-error"));
+            }
 
             // parse the input using the ixml grammar
-            final String generatedXML = Blitz.generate(ixmlGrammar).parse(input);
+            final String generatedXML;
+            if (failOnError) {
+                generatedXML = Blitz.generate(ixmlGrammar).parse(input, Blitz.Option.FAIL_ON_ERROR);
+            } else {
+                generatedXML = Blitz.generate(ixmlGrammar).parse(input);
+            }
 
             return parse(generatedXML);
         }
@@ -180,7 +188,6 @@ public class FnInvisibleXml extends BasicFunction {
                 reader.parse(new InputSource(stringReader));
                 return adapter.getDocument();
             } catch (final SAXException | IOException e) {
-                // TODO(YB) add error code
                 throw new XPathException(this, e.getMessage(), e);
             } finally {
                 pool.returnXMLReader(reader);
