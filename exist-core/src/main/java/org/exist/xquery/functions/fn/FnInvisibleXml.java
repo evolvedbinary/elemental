@@ -29,7 +29,6 @@ import static org.exist.xquery.FunctionDSL.param;
 import static org.exist.xquery.FunctionDSL.returns;
 
 import com.evolvedbinary.j8fu.Either;
-import com.github.krukow.clj_lang.Obj;
 import org.exist.Namespaces;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.exist.dom.memtree.SAXAdapter;
@@ -128,14 +127,21 @@ public class FnInvisibleXml extends BasicFunction {
 
             // get the input
             final Sequence inputArg = getCurrentArguments()[0];
-            final String input = inputArg.itemAt(0).getStringValue();
+            final String input = inputArg.getStringValue();
 
             // generate the default ixml grammar
             final String ixmlGrammar;
+            // the null check here is wrong
             if (grammar == null) {
-                ixmlGrammar = Blitz.ixmlGrammar();
-            } else if (grammar.isLeft()) {
-                ixmlGrammar = grammar.left().get().getStringValue();
+                // something went horabily wrong
+                throw new XPathException("idk how it can be null");
+            }
+            if (grammar.isLeft()) {
+                if (grammar.left().get() == null) {
+                    ixmlGrammar = Blitz.ixmlGrammar();
+                } else {
+                    ixmlGrammar = grammar.left().get().getStringValue();
+                }
             } else {
                 // grammar is an element: serialize it to a String
                 try (final StringBuilderWriter writer = new StringBuilderWriter()) {
