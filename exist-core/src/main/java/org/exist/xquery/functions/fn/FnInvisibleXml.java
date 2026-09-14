@@ -35,6 +35,7 @@ import org.exist.dom.memtree.SAXAdapter;
 import org.exist.util.XMLReaderPool;
 import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xquery.*;
+import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.*;
 import org.w3c.dom.Element;
 import org.xml.sax.*;
@@ -44,7 +45,6 @@ import de.bottlecaps.markup.Blitz;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Map;
 import java.util.Properties;
 
 public class FnInvisibleXml extends BasicFunction {
@@ -65,13 +65,9 @@ public class FnInvisibleXml extends BasicFunction {
     @Override
     public Sequence eval(final Sequence[] args, final Sequence contextSequence) throws XPathException {
         final Sequence optionsArg = args[1];
-        @Nullable
-        final Map<Object, Object> options;
-        if (optionsArg.isEmpty()) {
-            options = null;
-        } else {
-            options = (Map<Object, Object>) optionsArg.itemAt(0).toJavaObject(Map.class);
-        }
+        final MapType options = optionsArg.isEmpty()
+                ? new MapType(context)
+                : (MapType) optionsArg.itemAt(0);
 
         final IxmlParserFunction fn;
         final Sequence grammarArg = args[0];
@@ -103,20 +99,21 @@ public class FnInvisibleXml extends BasicFunction {
                 returns(Type.DOCUMENT, "just a random string for now"),
                 param("Parser inpuit", Type.STRING, "param description"));
 
+        private static final StringValue FAIL_ON_ERROR_KEY = new StringValue("fail-on-error");
+
         @Nullable
         final Either<StringValue, Element> grammar;
-        @Nullable
-        final Map<Object, Object> options;
+        final MapType options;
 
         IxmlParserFunction(final XQueryContext context, @Nullable final StringValue grammar,
-                @Nullable final Map<Object, Object> options) {
+                final MapType options) {
             super(context, FS_PARSE_INVISIBLE_XML);
             this.grammar = Left(grammar);
             this.options = options;
         }
 
         IxmlParserFunction(final XQueryContext context, @Nullable final Element grammar,
-                @Nullable final Map<Object, Object> options) {
+                final MapType options) {
             super(context, FS_PARSE_INVISIBLE_XML);
             this.grammar = Right(grammar);
             this.options = options;
@@ -154,10 +151,8 @@ public class FnInvisibleXml extends BasicFunction {
                 }
             }
 
-            boolean failOnError = false;
-            if (options != null) {
-                failOnError = Boolean.TRUE.equals(options.get("fail-on-error"));
-            }
+            final boolean failOnError = options.contains(FAIL_ON_ERROR_KEY)
+                    && options.get(FAIL_ON_ERROR_KEY).effectiveBooleanValue();
 
             // parse the input using the ixml grammar
             final String generatedXML;
