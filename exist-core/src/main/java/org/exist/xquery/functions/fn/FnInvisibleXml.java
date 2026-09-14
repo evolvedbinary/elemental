@@ -41,6 +41,8 @@ import org.w3c.dom.Element;
 import org.xml.sax.*;
 
 import de.bottlecaps.markup.Blitz;
+import de.bottlecaps.markup.BlitzException;
+import de.bottlecaps.markup.blitz.Parser;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -147,19 +149,28 @@ public class FnInvisibleXml extends BasicFunction {
                     xqSerializer.serialize((Sequence) grammar.right().get());
                     ixmlGrammar = writer.toString();
                 } catch (final SAXException e) {
-                    throw new XPathException(this, e.getMessage(), e);
+                    throw new XPathException(this, ErrorCodes.FOIX0001, e.getMessage(), e);
                 }
             }
 
             final boolean failOnError = options.contains(FAIL_ON_ERROR_KEY)
                     && options.get(FAIL_ON_ERROR_KEY).effectiveBooleanValue();
 
+            final Parser parser;
+            try {
+                parser = Blitz.generate(ixmlGrammar);
+            } catch (final BlitzException e) {
+                throw new XPathException(this, ErrorCodes.FOIX0001, e.getMessage(), e);
+            }
+
             // parse the input using the ixml grammar
             final String generatedXML;
-            if (failOnError) {
-                generatedXML = Blitz.generate(ixmlGrammar).parse(input, Blitz.Option.FAIL_ON_ERROR);
-            } else {
-                generatedXML = Blitz.generate(ixmlGrammar).parse(input);
+            try {
+                generatedXML = failOnError
+                        ? parser.parse(input, Blitz.Option.FAIL_ON_ERROR)
+                        : parser.parse(input);
+            } catch (final BlitzException e) {
+                throw new XPathException(this, ErrorCodes.FOIX0002, e.getMessage(), e);
             }
 
             return parse(generatedXML);
