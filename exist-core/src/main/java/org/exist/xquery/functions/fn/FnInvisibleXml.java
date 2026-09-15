@@ -97,9 +97,9 @@ public class FnInvisibleXml extends BasicFunction {
         private static final String FS_PARSE_INVISIBLE_XML_NAME = "parse-invisible-xml";
         private static final FunctionSignature FS_PARSE_INVISIBLE_XML = functionSignature(
                 FS_PARSE_INVISIBLE_XML_NAME,
-                "Gets the next random number generator.",
-                returns(Type.DOCUMENT, "just a random string for now"),
-                param("Parser inpuit", Type.STRING, "param description"));
+                "Parses the input using the given iXML grammar.",
+                returns(Type.DOCUMENT, "The parsed document"),
+                param("input", Type.STRING, "The input to parse"));
 
         private static final StringValue FAIL_ON_ERROR_KEY = new StringValue("fail-on-error");
 
