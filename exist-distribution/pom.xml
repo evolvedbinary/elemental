@@ -708,7 +708,7 @@
             <plugin>
                 <groupId>com.evolvedbinary.maven.plugins</groupId>
                 <artifactId>expath-package-repository-plugin</artifactId>
-                <version>1.3.1</version>
+                <version>1.5.0</version>
                 <executions>
                     <execution>
                         <id>fetch-xars</id>
@@ -719,7 +719,8 @@
                         <configuration>
                             <repoUri>${public.xar.repo.uri}</repoUri>
                             <outputDirectory>${expath.pkg.dir}</outputDirectory>
-                            <elementalVersion>${project.version}</elementalVersion>
+			    <elementalVersion>${project.version}</elementalVersion>
+			    <elementalExistDbPkgCompatibleVersion>${exist-db.expath.pkg.compatible.version}</elementalExistDbPkgCompatibleVersion>
                             <packages>
                                 <package>
                                     <abbrev>dashboard</abbrev>
