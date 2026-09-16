@@ -108,8 +108,9 @@ public class FnInvisibleXml extends BasicFunction {
         final MapType options;
 
         IxmlParserFunction(final XQueryContext context, @Nullable final StringValue grammar,
-                final MapType options) {
+                final MapType options) throws XPathException {
             super(context, FS_PARSE_INVISIBLE_XML);
+            addVariable("input");
             this.grammar = Left(grammar);
             this.options = options;
         }
@@ -200,5 +201,10 @@ public class FnInvisibleXml extends BasicFunction {
             }
 
         }
+
+        // @Override
+        // public String toString() {
+        // return "testing-invisible-xml";
+        // }
     }
 }
