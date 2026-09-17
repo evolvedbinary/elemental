@@ -584,6 +584,12 @@
             <!-- scope>test</scope --> <!-- not just test scope, as needed for org.exist.test -->
         </dependency>
 
+        <dependency>
+            <groupId>de.bottlecaps</groupId>
+            <artifactId>markup-blitz</artifactId>
+            <version>1.12</version>
+        </dependency>
+
         <!-- test dependencies -->
         <dependency>
             <groupId>xyz.elemental.fork.org.exist-db</groupId>
