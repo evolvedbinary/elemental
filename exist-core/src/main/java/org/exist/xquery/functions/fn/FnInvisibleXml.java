@@ -129,12 +129,9 @@ public class FnInvisibleXml extends BasicFunction {
             final Sequence inputArg = getCurrentArguments()[0];
             final String input = inputArg.getStringValue();
 
-            // generate the default ixml grammar
             final String ixmlGrammar;
-            // the null check here is wrong
             if (grammar == null) {
-                // something went horabily wrong
-                throw new XPathException("idk how it can be null");
+                throw new XPathException("Internal error: null grammar.");
             }
             if (grammar.isLeft()) {
                 if (grammar.left().get() == null) {
@@ -201,10 +198,5 @@ public class FnInvisibleXml extends BasicFunction {
             }
 
         }
-
-        // @Override
-        // public String toString() {
-        // return "testing-invisible-xml";
-        // }
     }
 }
