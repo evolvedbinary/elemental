@@ -75,7 +75,7 @@ public class FnInvisibleXml extends BasicFunction {
         final Sequence grammarArg = args[0];
         if (grammarArg.isEmpty()) {
             // no grammar provided
-            fn = new IxmlParserFunction(context, (StringValue) null, options);
+            fn = new IxmlParserFunction(context, options);
 
         } else if (grammarArg.getItemType() == Type.STRING) {
             // grammar is a string
@@ -107,7 +107,14 @@ public class FnInvisibleXml extends BasicFunction {
         final Either<StringValue, Element> grammar;
         final MapType options;
 
-        IxmlParserFunction(final XQueryContext context, @Nullable final StringValue grammar,
+        IxmlParserFunction(final XQueryContext context, final MapType options) throws XPathException {
+            super(context, FS_PARSE_INVISIBLE_XML);
+            addVariable("input");
+            this.grammar = null;
+            this.options = options;
+        }
+
+        IxmlParserFunction(final XQueryContext context, final StringValue grammar,
                 final MapType options) throws XPathException {
             super(context, FS_PARSE_INVISIBLE_XML);
             addVariable("input");
@@ -115,9 +122,10 @@ public class FnInvisibleXml extends BasicFunction {
             this.options = options;
         }
 
-        IxmlParserFunction(final XQueryContext context, @Nullable final Element grammar,
-                final MapType options) {
+        IxmlParserFunction(final XQueryContext context, final Element grammar,
+                final MapType options) throws XPathException {
             super(context, FS_PARSE_INVISIBLE_XML);
+            addVariable("input");
             this.grammar = Right(grammar);
             this.options = options;
         }
@@ -131,14 +139,14 @@ public class FnInvisibleXml extends BasicFunction {
 
             final String ixmlGrammar;
             if (grammar == null) {
-                throw new XPathException("Internal error: null grammar.");
-            }
-            if (grammar.isLeft()) {
-                if (grammar.left().get() == null) {
+                // no grammar provided: use the default Invisible XML specification grammar
+                try {
                     ixmlGrammar = Blitz.ixmlGrammar();
-                } else {
-                    ixmlGrammar = grammar.left().get().getStringValue();
+                } catch (final BlitzException e) {
+                    throw new XPathException(this, ErrorCodes.W3CErrorCode.FOIX0003.getErrorCode(), e.getMessage(), e);
                 }
+            } else if (grammar.isLeft()) {
+                ixmlGrammar = grammar.left().get().getStringValue();
             } else {
                 // grammar is an element: serialize it to a String
                 try (final StringBuilderWriter writer = new StringBuilderWriter()) {
