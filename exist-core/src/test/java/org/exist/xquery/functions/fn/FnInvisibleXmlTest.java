@@ -98,6 +98,20 @@ public class FnInvisibleXmlTest {
                 parseQuery(ALPHABIT_GRAMMAR, FAIL_ON_ERROR_OPTIONS, ALPHABIT_INVALID_INPUT));
     }
 
+    @Test
+    public void noGrammarProvidedNoOptions() throws XMLDBException {
+        final String result = EXIST_EMBEDDED_SERVER
+                .executeOneValue(failedStateQueryNoGrammar(NO_OPTIONS, ALPHABIT_GRAMMAR));
+        assertEquals("false", result);
+    }
+
+    @Test
+    public void noGrammarProvidedWithOptions() throws XMLDBException {
+        final String result = EXIST_EMBEDDED_SERVER
+                .executeOneValue(failedStateQueryNoGrammar(FAIL_ON_ERROR_OPTIONS, ALPHABIT_GRAMMAR));
+        assertEquals("false", result);
+    }
+
     /**
      * Builds a query that creates a parser from the grammar and options, and
      * applies it to the input.
@@ -112,6 +126,15 @@ public class FnInvisibleXmlTest {
      */
     private static String failedStateQuery(final String grammar, final String options, final String input) {
         return "let $parser := fn:invisible-xml(" + stringLiteral(grammar) + ", " + options + ")\n" +
+                "let $result := $parser(" + stringLiteral(input) + ")\n" +
+                "return $result/*/@*:state = 'failed'";
+    }
+
+    /*
+     * Builds a query that creates a parser with no grammar
+     */
+    private static String failedStateQueryNoGrammar(final String options, final String input) {
+        return "let $parser := fn:invisible-xml((), " + options + ")\n" +
                 "let $result := $parser(" + stringLiteral(input) + ")\n" +
                 "return $result/*/@*:state = 'failed'";
     }
