@@ -31,34 +31,6 @@ import static org.junit.Assert.fail;
 
 public class FnInvisibleXmlTest {
 
-    // xquery version "3.1";
-
-    // let $date-grammar := " date = year, -'-', month, -'-', day .
-    // year = d, d, d, d .
-    // month = '0', d | '1', ['0'|'1'|'2'] .
-    // day = ['0'|'1'|'2'], d | '3', ['0'|'1'] .
-    // -d = ['0'-'9'] ."
-
-    // let $valid-date-input := "2023-10-31"
-
-    // let $invalid-date-input := "2023-10-32"
-
-    // let $alphabit-grammar := "S=A. A='a'."
-
-    // let $alphabit-valid-input := "a"
-    // (:expected <S><A>a</A></S> :)
-    // let $alphabit-invalid-input := "b"
-    // (:let $result := $parser("b"):)
-    // (:return $result/*/@*:state = 'failed':)
-    // (:expected true() :)
-    // (:FOIX0002 when fail-on is true:)
-
-    // (:let $parser := fn:invisible-xml($grammar, map { }):)
-    // let $parser-fail-on := fn:invisible-xml($alphabit-grammar, map {
-    // "fail-on-error": true() })
-
-    // return $parser-fail-on($alphabit-invalid-input)
-
     @ClassRule
     public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
 
