@@ -21,6 +21,7 @@
 package org.exist.xquery.functions.fn;
 
 import org.exist.test.ExistXmldbEmbeddedServer;
+import org.exist.xquery.ErrorCodes;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.xmldb.api.base.XMLDBException;
@@ -66,7 +67,8 @@ public class FnInvisibleXmlTest {
 
     @Test
     public void dateInvalidInputFailOnError() {
-        assertError("FOIX0002", parseQuery(DATE_GRAMMAR, FAIL_ON_ERROR_OPTIONS, DATE_INVALID_INPUT));
+        assertError(ErrorCodes.W3CErrorCode.FOIX0002,
+                parseQuery(DATE_GRAMMAR, FAIL_ON_ERROR_OPTIONS, DATE_INVALID_INPUT));
     }
 
     @Test
@@ -92,7 +94,8 @@ public class FnInvisibleXmlTest {
 
     @Test
     public void alphabitInvalidInputFailOnError() {
-        assertError("FOIX0002", parseQuery(ALPHABIT_GRAMMAR, FAIL_ON_ERROR_OPTIONS, ALPHABIT_INVALID_INPUT));
+        assertError(ErrorCodes.W3CErrorCode.FOIX0002,
+                parseQuery(ALPHABIT_GRAMMAR, FAIL_ON_ERROR_OPTIONS, ALPHABIT_INVALID_INPUT));
     }
 
     /**
@@ -117,14 +120,14 @@ public class FnInvisibleXmlTest {
         return "\"" + value.replace("\"", "\"\"") + "\"";
     }
 
-    private static void assertError(final String errorCode, final String query) {
+    private static void assertError(final ErrorCodes.W3CErrorCode errorCode, final String query) {
         try {
             EXIST_EMBEDDED_SERVER.executeOneValue(query);
         } catch (final XMLDBException e) {
-            assertTrue(e.getMessage(), e.getMessage().contains(errorCode));
+            assertTrue(e.getMessage(), e.getMessage().contains(errorCode.name()));
             return;
         }
 
-        fail("Expected XPathException: err:" + errorCode);
+        fail("Expected XPathException: err:" + errorCode.name());
     }
 }
