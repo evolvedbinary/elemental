@@ -32,7 +32,8 @@ import static org.junit.Assert.fail;
 public class FnInvisibleXmlTest {
 
     @ClassRule
-    public static final ExistXmldbEmbeddedServer existEmbeddedServer = new ExistXmldbEmbeddedServer(false, true, true);
+    public static final ExistXmldbEmbeddedServer EXIST_EMBEDDED_SERVER = new ExistXmldbEmbeddedServer(false, true,
+            true);
 
     private static final String DATE_GRAMMAR = " date = year, -'-', month, -'-', day .\n" +
             " year = d, d, d, d .\n" +
@@ -51,14 +52,14 @@ public class FnInvisibleXmlTest {
 
     @Test
     public void dateValidInput() throws XMLDBException {
-        final String result = existEmbeddedServer
+        final String result = EXIST_EMBEDDED_SERVER
                 .executeOneValue(parseQuery(DATE_GRAMMAR, NO_OPTIONS, DATE_VALID_INPUT));
         assertEquals("<date><year>2023</year><month>10</month><day>31</day></date>", result);
     }
 
     @Test
     public void dateInvalidInput() throws XMLDBException {
-        final String result = existEmbeddedServer
+        final String result = EXIST_EMBEDDED_SERVER
                 .executeOneValue(failedStateQuery(DATE_GRAMMAR, NO_OPTIONS, DATE_INVALID_INPUT));
         assertEquals("true", result);
     }
@@ -70,21 +71,21 @@ public class FnInvisibleXmlTest {
 
     @Test
     public void alphabitValidInput() throws XMLDBException {
-        final String result = existEmbeddedServer
+        final String result = EXIST_EMBEDDED_SERVER
                 .executeOneValue(parseQuery(ALPHABIT_GRAMMAR, NO_OPTIONS, ALPHABIT_VALID_INPUT));
         assertEquals("<S><A>a</A></S>", result);
     }
 
     @Test
     public void alphabitValidInputFailOnError() throws XMLDBException {
-        final String result = existEmbeddedServer
+        final String result = EXIST_EMBEDDED_SERVER
                 .executeOneValue(parseQuery(ALPHABIT_GRAMMAR, FAIL_ON_ERROR_OPTIONS, ALPHABIT_VALID_INPUT));
         assertEquals("<S><A>a</A></S>", result);
     }
 
     @Test
     public void alphabitInvalidInput() throws XMLDBException {
-        final String result = existEmbeddedServer
+        final String result = EXIST_EMBEDDED_SERVER
                 .executeOneValue(failedStateQuery(ALPHABIT_GRAMMAR, NO_OPTIONS, ALPHABIT_INVALID_INPUT));
         assertEquals("true", result);
     }
@@ -118,7 +119,7 @@ public class FnInvisibleXmlTest {
 
     private static void assertError(final String errorCode, final String query) {
         try {
-            existEmbeddedServer.executeOneValue(query);
+            EXIST_EMBEDDED_SERVER.executeOneValue(query);
         } catch (final XMLDBException e) {
             assertTrue(e.getMessage(), e.getMessage().contains(errorCode));
             return;
