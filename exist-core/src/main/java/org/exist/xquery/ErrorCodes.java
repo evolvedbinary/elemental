@@ -1541,24 +1541,6 @@ public class ErrorCodes {
     public static final ErrorCode FOXT0006 = W3CErrorCode.FOXT0006.errorCode;
 
     /**
-     * @deprecated Use {@link W3CErrorCode#FOIX0001}.
-     */
-    @Deprecated
-    public static final ErrorCode FOIX0001 = W3CErrorCode.FOIX0001.errorCode;
-
-    /**
-     * @deprecated Use {@link W3CErrorCode#FOIX0002}.
-     */
-    @Deprecated
-    public static final ErrorCode FOIX0002 = W3CErrorCode.FOIX0002.errorCode;
-
-    /**
-     * @deprecated Use {@link W3CErrorCode#FOIX0003}.
-     */
-    @Deprecated
-    public static final ErrorCode FOIX0003 = W3CErrorCode.FOIX0003.errorCode;
-
-    /**
      * @deprecated Use {@link W3CErrorCode#XTSE0165}.
      */
     @Deprecated

@@ -147,7 +147,7 @@ public class FnInvisibleXml extends BasicFunction {
                     xqSerializer.serialize((Sequence) grammar.right().get());
                     ixmlGrammar = writer.toString();
                 } catch (final SAXException e) {
-                    throw new XPathException(this, ErrorCodes.FOIX0001, e.getMessage(), e);
+                    throw new XPathException(this, ErrorCodes.W3CErrorCode.FOIX0001.getErrorCode(), e.getMessage(), e);
                 }
             }
 
@@ -158,7 +158,7 @@ public class FnInvisibleXml extends BasicFunction {
             try {
                 parser = Blitz.generate(ixmlGrammar);
             } catch (final BlitzException e) {
-                throw new XPathException(this, ErrorCodes.FOIX0001, e.getMessage(), e);
+                throw new XPathException(this, ErrorCodes.W3CErrorCode.FOIX0001.getErrorCode(), e.getMessage(), e);
             }
 
             // parse the input using the ixml grammar
@@ -168,7 +168,7 @@ public class FnInvisibleXml extends BasicFunction {
                         ? parser.parse(input, Blitz.Option.FAIL_ON_ERROR)
                         : parser.parse(input);
             } catch (final BlitzException e) {
-                throw new XPathException(this, ErrorCodes.FOIX0002, e.getMessage(), e);
+                throw new XPathException(this, ErrorCodes.W3CErrorCode.FOIX0002.getErrorCode(), e.getMessage(), e);
             }
 
             return parse(generatedXML);
