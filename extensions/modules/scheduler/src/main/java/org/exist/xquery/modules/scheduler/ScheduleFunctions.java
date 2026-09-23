@@ -257,8 +257,6 @@ public class ScheduleFunctions extends BasicFunction
     public ScheduleFunctions( XQueryContext context, FunctionSignature signature )
     {
         super( context, signature );
-
-        scheduler = context.getBroker().getBrokerPool().getScheduler();
     }
 
     /**
@@ -352,6 +350,7 @@ public class ScheduleFunctions extends BasicFunction
 
         if( job != null ) {
 
+            Scheduler scheduler = context.getBroker().getBrokerPool().getScheduler();
             if( isCron ) {
 
                 //schedule the job
