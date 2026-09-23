@@ -46,7 +46,7 @@
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
-import net.sf.saxon.tree.util.FastStringBuffer;
+import net.sf.saxon.str.UnicodeBuilder;
 import net.sf.saxon.value.FloatingPointConverter;
 import org.exist.util.ByteConversion;
 import org.exist.xquery.Constants;
@@ -143,7 +143,7 @@ public class FloatValue extends NumericValue {
 		return s;	
 		*/
 
-        final FastStringBuffer sb = new FastStringBuffer(20);
+        final UnicodeBuilder sb = new UnicodeBuilder(20);
         //0 is a dummy parameter
         FloatingPointConverter.appendFloat(sb, value, false);
         return sb.toString();

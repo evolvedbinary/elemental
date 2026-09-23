@@ -70,6 +70,7 @@ import javax.xml.transform.stream.StreamSource;
 import com.evolvedbinary.j8fu.lazy.LazyVal;
 import io.lacuna.bifurcan.IEntry;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import net.sf.saxon.lib.ResourceResolverWrappingURIResolver;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -920,9 +921,13 @@ public abstract class Serializer implements XMLReader {
                 throw new TransformerConfigurationException("stylesheet not found: " + stylesheetUri);
             }
 
-            //TODO: use xmldbURI
+            final net.sf.saxon.TransformerFactoryImpl saxonFactory = (net.sf.saxon.TransformerFactoryImpl) factory.get();
+            final net.sf.saxon.Configuration saxonConfiguration = saxonFactory.getConfiguration();
+            @Nullable net.sf.saxon.lib.ResourceResolver prevResourceResolver = null;
             if (xsl.getCollection() != null) {
-                factory.get().setURIResolver(new InternalURIResolver(xsl.getCollection().getURI().toString()));
+                prevResourceResolver = saxonConfiguration.getResourceResolver();
+                final URIResolver internalUriResolver = new InternalURIResolver(xsl.getCollection().getURI().toString());
+                saxonConfiguration.setResourceResolver(new ResourceResolverWrappingURIResolver(internalUriResolver));
             }
 
             // save handlers
@@ -941,7 +946,9 @@ public abstract class Serializer implements XMLReader {
 
             // restore handlers
             receiver = oldReceiver;
-            factory.get().setURIResolver(null);
+            if (prevResourceResolver != null) {
+                saxonConfiguration.setResourceResolver(prevResourceResolver);
+            }
         }
         LOG.debug("compiling stylesheet took {}", System.currentTimeMillis() - start);
         if (templates != null) {

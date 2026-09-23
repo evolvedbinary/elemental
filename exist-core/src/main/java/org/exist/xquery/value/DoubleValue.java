@@ -46,7 +46,7 @@
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
-import net.sf.saxon.tree.util.FastStringBuffer;
+import net.sf.saxon.str.UnicodeString;
 import net.sf.saxon.value.FloatingPointConverter;
 import org.exist.util.ByteConversion;
 import org.exist.xquery.Constants;
@@ -133,10 +133,9 @@ public class DoubleValue extends NumericValue {
 
     @Override
     public String getStringValue() {
-        final FastStringBuffer sb = new FastStringBuffer(20);
         //0 is a dummy parameter
-        FloatingPointConverter.appendDouble(sb, value, false);
-        return sb.toString();
+        final UnicodeString str = FloatingPointConverter.convertDouble(value, false);
+        return str.toString();
     }
 
     public double getValue() {

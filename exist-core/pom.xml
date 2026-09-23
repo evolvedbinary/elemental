@@ -444,9 +444,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.exist-db</groupId>
-            <artifactId>exist-saxon-regex</artifactId>
-            <version>9.4.0-9.e1</version>
+            <groupId>xyz.elemental.fork.saxon</groupId>
+            <artifactId>saxon-regex-translator</artifactId>
+            <version>12.10.e3</version>
             <exclusions>
                 <exclusion>
                     <!-- we have our own dependency on Saxon -->
@@ -825,6 +825,7 @@
                                 <include>src/test/xquery/xquery3/parse-xml.xqm</include>
                                 <include>src/test/xquery/xquery3/serialize.xql</include>
                                 <include>src/test/xquery/xquery3/xml-to-json.xql</include>
+                                <include>src/test/xquery/xquery3/transform/fnTransform68.xqm</include>
                                 <include>src/main/java/org/exist/BTreeTest.java</include>
                                 <include>src/main/java/org/exist/Indexer.java</include>
                                 <include>src/test/java/org/exist/Indexer2Test.java</include>
@@ -1434,6 +1435,7 @@
                                 <include>src/test/java/org/exist/xquery/functions/fn/FunLangTest.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunLast.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunLocalName.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FunMatches.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunMax.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunMin.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/FunName.java</include>
@@ -1488,6 +1490,7 @@
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Convert.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Delivery.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Options.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/transform/SerializationParameters.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/Transform.java</include>
                                 <include>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</include>
                                 <include>src/test/java/org/exist/xquery/functions/inspect/InspectModuleTest.java</include>
@@ -1668,6 +1671,7 @@
                                 <exclude>src/test/xquery/xquery3/postfix-expr.xqm</exclude>
                                 <exclude>src/test/xquery/xquery3/serialize.xql</exclude>
                                 <exclude>src/test/xquery/xquery3/xml-to-json.xql</exclude>
+                                <exclude>src/test/xquery/xquery3/transform/fnTransform68.xqm</exclude>
                                 <exclude>src/main/java/org/exist/BTreeTest.java</exclude>
                                 <exclude>src/main/java/org/exist/Indexer.java</exclude>
                                 <exclude>src/test/java/org/exist/Indexer2Test.java</exclude>
@@ -2392,6 +2396,7 @@
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/FunLangTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunLast.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunLocalName.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FunMatches.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunMax.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunMin.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunName.java</exclude>
@@ -2450,6 +2455,7 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Delivery.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/fn/transform/FunTransformITTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Options.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/transform/SerializationParameters.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/Transform.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/transform/TreeUtils.java</exclude>
                                 <exclude>src/test/java/org/exist/xquery/functions/inspect/InspectModuleTest.java</exclude>

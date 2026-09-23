@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -19,7 +43,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.functions.fn.transform;
 
 import com.evolvedbinary.j8fu.tuple.Tuple3;
@@ -220,25 +243,6 @@ class SerializationParameters {
     static final StructuredQName qNameCharacterMap = new StructuredQName("", "http://www.exist-db.org", "fn-transform-charactermap");
 
     /**
-     * {@link CharacterMap} doesn't provide a method of naming a combined map
-     * <p></p>
-     * We need our combined map to have a name to find it in a {@link CharacterMapIndex}
-     */
-    static class NamedCombinedCharacterMap extends CharacterMap {
-
-        private final StructuredQName name;
-
-        public NamedCombinedCharacterMap(final StructuredQName name, final Iterable<CharacterMap> list) {
-            super(list);
-            this.name = name;
-        }
-
-        @Override public StructuredQName getName() {
-            return this.name;
-        }
-    }
-
-    /**
      * Combine the serialization properties from a compiled stylesheet
      * with the serialization properties supplied as parameters to fn:transform
      * so that a serializer can be configured to serialize using the correct combination
@@ -283,7 +287,7 @@ class SerializationParameters {
             }
             final CharacterMap combinedMap = combinedProperties.getCharacterMapIndex().getCharacterMap(qNameCharacterMap);
             allMaps.add(combinedMap);
-            final CharacterMap repairedCombinedMap = new NamedCombinedCharacterMap(qNameCharacterMap, allMaps);
+            final CharacterMap repairedCombinedMap = new CharacterMap(allMaps, qNameCharacterMap);
             combinedProperties.getCharacterMapIndex().putCharacterMap(
                     qNameCharacterMap,
                     repairedCombinedMap);

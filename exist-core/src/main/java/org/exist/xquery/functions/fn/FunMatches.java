@@ -1,4 +1,28 @@
 /*
+ * Elemental
+ * Copyright (C) 2024, Evolved Binary Ltd
+ *
+ * admin@evolvedbinary.com
+ * https://www.evolvedbinary.com | https://www.elemental.xyz
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+ *       The original license header is included below.
+ *
+ * =====================================================================
+ *
  * eXist-db Open Source Native XML Database
  * Copyright (C) 2001 The eXist-db Authors
  *
@@ -21,6 +45,8 @@
  */
 package org.exist.xquery.functions.fn;
 
+import net.sf.saxon.str.StringView;
+import net.sf.saxon.str.UnicodeString;
 import org.exist.EXistException;
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.ExtArrayNodeSet;
@@ -57,6 +83,7 @@ import static org.exist.xquery.regex.RegexUtil.*;
  * <p>
  * Based on the java.util.regex package for regular expression support.
  *
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  */
 public final class FunMatches extends Function implements Optimizable, IndexUseReporter {
@@ -507,12 +534,12 @@ public final class FunMatches extends Function implements Optimizable, IndexUseR
             final int flags = parseFlags(this, xmlRegexFlags);
             return BooleanValue.valueOf(match(string, pattern,flags));
         } else {
-            return BooleanValue.valueOf(matchXmlRegex(string, pattern, xmlRegexFlags));
+            return BooleanValue.valueOf(matchXmlRegex(StringView.of(string), StringView.of(pattern), xmlRegexFlags));
         }
     }
 
 
-    private boolean matchXmlRegex(final String string, final String pattern, final String flags) throws XPathException {
+    private boolean matchXmlRegex(final UnicodeString string, final UnicodeString pattern, final String flags) throws XPathException {
         try {
             List<String> warnings = new ArrayList<>(1);
             RegularExpression regex = context.getBroker().getBrokerPool()
@@ -526,7 +553,7 @@ public final class FunMatches extends Function implements Optimizable, IndexUseR
             return regex.containsMatch(string);
 
         } catch (final net.sf.saxon.trans.XPathException e) {
-            switch (e.getErrorCodeLocalPart()) {
+            switch (e.getErrorCodeQName().getLocalPart()) {
                 case "FORX0001" -> throw new XPathException(this, ErrorCodes.FORX0001, "Invalid regular expression: " + e.getMessage());
                 case "FORX0002" -> throw new XPathException(this, ErrorCodes.FORX0002, "Invalid regular expression: " + e.getMessage());
                 // no FORX0003 here since fn:matches is allowed to match an empty string

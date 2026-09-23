@@ -79,7 +79,7 @@ public class XmlLibraryChecker {
      * Possible XML Transformers, at least one must be valid
      */
     private static final ClassVersion[] VALID_TRANSFORMERS = {
-        new ClassVersion("Saxon", "9.9.1", "net.sf.saxon.Version.getProductVersion()")
+        new ClassVersion("Saxon", "12.10", "net.sf.saxon.Version.getProductVersion()")
     };
     
     /**

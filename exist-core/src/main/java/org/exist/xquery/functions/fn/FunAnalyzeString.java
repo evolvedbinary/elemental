@@ -62,6 +62,8 @@ import net.sf.saxon.Configuration;
 import net.sf.saxon.om.Item;
 import net.sf.saxon.regex.RegexIterator;
 import net.sf.saxon.regex.RegularExpression;
+import net.sf.saxon.str.StringView;
+import net.sf.saxon.str.UnicodeString;
 import org.exist.dom.QName;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.xquery.*;
@@ -141,6 +143,8 @@ public class FunAnalyzeString extends BasicFunction {
         )
     };
 
+    private static final UnicodeString EMPTY_UNICODE_STRING = StringView.of("");
+
     public FunAnalyzeString(final XQueryContext context, final FunctionSignature signature) {
         super(context, signature);
     }
@@ -152,12 +156,14 @@ public class FunAnalyzeString extends BasicFunction {
             final MemTreeBuilder builder = context.getDocumentBuilder();
             builder.startDocument();
             builder.startElement(new QName("analyze-string-result", FnModule.NAMESPACE_URI), null);
-            String input = "";
+            final UnicodeString input;
             if (!args[0].isEmpty()) {
-                input = args[0].itemAt(0).getStringValue();
+                input = StringView.of(args[0].itemAt(0).getStringValue());
+            } else {
+                input = EMPTY_UNICODE_STRING;
             }
             if (input != null && !input.isEmpty()) {
-                final String pattern = args[1].itemAt(0).getStringValue();
+                final UnicodeString pattern = StringView.of(args[1].itemAt(0).getStringValue());
                 String flags = "";
                 if (args.length == 3) {
                     flags = args[2].itemAt(0).getStringValue();
@@ -172,14 +178,14 @@ public class FunAnalyzeString extends BasicFunction {
         }
     }
 
-    private void analyzeString(final MemTreeBuilder builder, final String input, String pattern, final String flags) throws XPathException {
+    private void analyzeString(final MemTreeBuilder builder, final UnicodeString input, final UnicodeString pattern, final String flags) throws XPathException {
         final Configuration config = context.getBroker().getBrokerPool().getSaxonConfiguration();
 
         final List<String> warnings = new ArrayList<>(1);
 
         try {
             final RegularExpression regularExpression = config.compileRegularExpression(pattern, flags, "XP30", warnings);
-            if (regularExpression.matches("")) {
+            if (regularExpression.matches(EMPTY_UNICODE_STRING)) {
                 throw new XPathException(this, ErrorCodes.FORX0003, "regular expression could match empty string");
             }
 
@@ -199,7 +205,7 @@ public class FunAnalyzeString extends BasicFunction {
                 LOG.warn(warning);
             }
         } catch (final net.sf.saxon.trans.XPathException e) {
-            switch (e.getErrorCodeLocalPart()) {
+            switch (e.getErrorCodeQName().getLocalPart()) {
                 case "FORX0001" -> throw new XPathException(this, ErrorCodes.FORX0001, e.getMessage());
                 case "FORX0002" -> throw new XPathException(this, ErrorCodes.FORX0002, e.getMessage());
                 case "FORX0003" -> throw new XPathException(this, ErrorCodes.FORX0003, e.getMessage());
@@ -316,7 +322,7 @@ public class FunAnalyzeString extends BasicFunction {
 
     private void nonMatch(final MemTreeBuilder builder, final Item item) {
         builder.startElement(QN_NON_MATCH, null);
-        builder.characters(item.getStringValueCS());
+        builder.characters(item.getStringValue());
         builder.endElement();
     }
 }

@@ -56,6 +56,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.util.Holder;
+import org.exist.util.UUIDGenerator;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
@@ -66,6 +67,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.xml.transform.ErrorListener;
 import javax.xml.transform.Source;
 import javax.xml.transform.TransformerException;
@@ -132,7 +134,7 @@ public class Transform {
         final Options options = new Options(context, fnTransform, toSaxon, (MapType) args[0].itemAt(0));
 
         //TODO(AR) Saxon recommends to use a <code>StreamSource</code> or <code>SAXSource</code> instead of DOMSource for performance
-        final Optional<Source> sourceNode = Transform.getSourceNode(options.sourceNode, context.getBaseURI());
+        final Optional<Source> sourceNode = Transform.getSourceNode(options.sourceNode, context);
 
         if (options.xsltVersion.equals(V1_0) || options.xsltVersion.equals(V2_0) || options.xsltVersion.equals(V3_0)) {
             try {
@@ -161,7 +163,9 @@ public class Transform {
 
                 final Xslt30Transformer xslt30Transformer = xsltExecutable.load30();
 
-                options.initialMode.ifPresent(qNameValue -> xslt30Transformer.setInitialMode(Convert.ToSaxon.of(qNameValue.getQName())));
+                if (options.initialMode.isPresent()) {
+                    xslt30Transformer.setInitialMode(Convert.ToSaxon.of(options.initialMode.get().getQName()));
+                }
                 xslt30Transformer.setInitialTemplateParameters(options.templateParams, false);
                 xslt30Transformer.setInitialTemplateParameters(options.tunnelParams, true);
                 if (options.baseOutputURI.isPresent()) {
@@ -192,18 +196,21 @@ public class Transform {
                     final XdmItem xdmItem = (XdmItem) toSaxon.of(item);
                     xslt30Transformer.setGlobalContextItem(xdmItem);
                 } else if (sourceNode.isPresent()) {
-                    final Document document;
                     Source source = sourceNode.get();
                     final Node node = ((DOMSource)sourceNode.get()).getNode();
                     if (!(node instanceof org.exist.dom.memtree.DocumentImpl) && !(node instanceof org.exist.dom.persistent.DocumentImpl)) {
                         //The source may not be a document
                         //If it isn't, it should be part of a document, so we build a DOMSource to use
-                        document = node.getOwnerDocument();
-                        source = new DOMSource(document);
+                        final Document document = node.getOwnerDocument();
+                        final String baseUri = getBaseUri(node, context);
+                        source = newDomSource(document, baseUri + "#global-context-item");
+                    } else {
+                        source = newDomSource(node, source.getSystemId() + "#global-context-item");
                     }
                     final var brokerPool = context.getBroker().getBrokerPool();
                     final DocumentBuilder sourceBuilder = brokerPool.getSaxonProcessor().newDocumentBuilder();
                     final XdmNode xdmNode = sourceBuilder.build(source);
+
                     xslt30Transformer.setGlobalContextItem(xdmNode);
                 } else {
                     xslt30Transformer.setGlobalContextItem(null);
@@ -288,7 +295,7 @@ public class Transform {
         Throwable cause = e;
         while (cause != null) {
             if (cause instanceof XPathException) {
-                return new XPathException(fnTransform, ((XPathException) cause).getErrorCode(), prefix + cause.getMessage());
+                return new XPathException(fnTransform, ((XPathException) cause).getErrorCode(), prefix + cause.getMessage(), cause);
             }
             cause = cause.getCause();
         }
@@ -305,15 +312,15 @@ public class Transform {
                     } catch (final IllegalArgumentException ee) {
                         errorCode = new ErrorCodes.DynamicErrorCode(errorCodeQName, cause.getMessage());
                     }
-                    return new XPathException(fnTransform, errorCode, prefix + cause.getMessage());
+                    return new XPathException(fnTransform, errorCode, prefix + cause.getMessage(), cause);
                 } else {
-                    return new XPathException(fnTransform, defaultErrorCode, prefix + cause.getMessage());
+                    return new XPathException(fnTransform, defaultErrorCode, prefix + cause.getMessage(), cause);
                 }
             }
             cause = cause.getCause();
         }
 
-        return new XPathException(fnTransform, defaultErrorCode, prefix + e.getMessage());
+        return new XPathException(fnTransform, defaultErrorCode, prefix + e.getMessage(), cause);
     }
 
     /**
@@ -400,7 +407,9 @@ public class Transform {
                 final Sequence initialMatchSelection = options.initialMatchSelection.get();
                 final Item item = initialMatchSelection.itemAt(0);
                 if (item instanceof Document) {
-                    final Source sourceIMS = new DOMSource((Document)item, context.getBaseURI().getStringValue());
+                    final Document document = (Document) item;
+                    final String baseUri = getBaseUri(document, context);
+                    final Source sourceIMS = newDomSource(document, baseUri);
                     xslt30Transformer.applyTemplates(sourceIMS, destination);
                 } else {
                     final XdmValue selection = toSaxon.of(initialMatchSelection);
@@ -459,8 +468,37 @@ public class Transform {
         }
     }
 
-    private static Optional<Source> getSourceNode(final Optional<NodeValue> sourceNode, final AnyURIValue baseURI) {
-        return sourceNode.map(NodeValue::getNode).map(node -> new DOMSource(node, baseURI.getStringValue()));
+    private static Optional<Source> getSourceNode(final Optional<NodeValue> sourceNode, final XQueryContext context) {
+        return sourceNode.map(NodeValue::getNode).map(node -> newDomSource(node, getBaseUri(node, context)));
+    }
+
+    private static String getBaseUri(final Node node, final XQueryContext context) {
+        @Nullable String baseUri = node.getBaseURI();
+        if (node instanceof org.exist.dom.persistent.NodeImpl<?>) {
+            // persistent nodes
+            if (node.getNodeType() != Node.DOCUMENT_NODE && node.getOwnerDocument().getBaseURI().equals(baseUri)) {
+                baseUri += "#" + ((org.exist.dom.persistent.NodeImpl<?>) node).getNodeId().toString();
+            }
+
+        } else {
+            // in-memory nodes
+            if (isNullOrEmpty(baseUri)) {
+                try {
+                    baseUri = context.getBaseURI().getStringValue();
+                } catch (final XPathException e) {
+                    // noop
+                }
+                if (isNullOrEmpty(baseUri)) {
+                    baseUri += "#" + UUIDGenerator.getUUIDversion4();
+                }
+            }
+        }
+
+        return baseUri;
+    }
+
+    private static DOMSource newDomSource(final Node node, final String baseUri) {
+        return new DOMSource(node, baseUri);
     }
 
     private static class ErrorListenerLog4jAdapter implements ErrorListener {

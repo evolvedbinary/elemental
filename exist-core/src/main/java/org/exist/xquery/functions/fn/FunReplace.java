@@ -51,6 +51,8 @@ import java.util.List;
 import net.sf.saxon.Configuration;
 import net.sf.saxon.functions.Replace;
 import net.sf.saxon.regex.RegularExpression;
+import net.sf.saxon.str.StringView;
+import net.sf.saxon.str.UnicodeString;
 import org.exist.dom.QName;
 import org.exist.xquery.*;
 import org.exist.xquery.value.FunctionParameterSequenceType;
@@ -117,6 +119,8 @@ public class FunReplace extends BasicFunction {
 			)
 	);
 
+	private static final UnicodeString EMPTY_UNICODE_STRING = StringView.of("");
+
 	public FunReplace(final XQueryContext context, final FunctionSignature signature) {
 		super(context, signature);
 	}
@@ -134,9 +138,9 @@ public class FunReplace extends BasicFunction {
 			} else {
 				flags = "";
 			}
-    		final String string = stringArg.getStringValue();
-    		final String pattern = args[1].itemAt(0).getStringValue();
-			final String replace = args[2].itemAt(0).getStringValue();
+    		final UnicodeString string = StringView.of(stringArg.getStringValue());
+    		final UnicodeString pattern = StringView.of(args[1].itemAt(0).getStringValue());
+			final UnicodeString replace = StringView.of(args[2].itemAt(0).getStringValue());
 
 			final Configuration config = context.getBroker().getBrokerPool().getSaxonConfiguration();
 
@@ -144,7 +148,7 @@ public class FunReplace extends BasicFunction {
 
 			try {
 				final RegularExpression regularExpression = config.compileRegularExpression(pattern, flags, "XP30", warnings);
-				if (regularExpression.matches("")) {
+				if (regularExpression.matches(EMPTY_UNICODE_STRING)) {
 					throw new XPathException(this, ErrorCodes.FORX0003, "regular expression could match empty string");
 				}
 
@@ -156,11 +160,11 @@ public class FunReplace extends BasicFunction {
 						throw new XPathException(this, ErrorCodes.FORX0004, msg);
 					}
 				}
-				final CharSequence res = regularExpression.replace(string, replace);
+				final UnicodeString res = regularExpression.replace(string, replace);
 				result = new StringValue(this, res.toString());
 
 			} catch (final net.sf.saxon.trans.XPathException e) {
-				switch (e.getErrorCodeLocalPart()) {
+				switch (e.getErrorCodeQName().getLocalPart()) {
 					case "FORX0001" -> throw new XPathException(this, ErrorCodes.FORX0001, e.getMessage());
 					case "FORX0002" -> throw new XPathException(this, ErrorCodes.FORX0002, e.getMessage());
 					case "FORX0003" -> throw new XPathException(this, ErrorCodes.FORX0003, e.getMessage());

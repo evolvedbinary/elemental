@@ -45,7 +45,7 @@
  */
 package org.exist.xquery.value;
 
-import net.sf.saxon.tree.util.FastStringBuffer;
+import net.sf.saxon.str.UnicodeBuilder;
 import net.sf.saxon.value.FloatingPointConverter;
 import org.exist.storage.io.VariableByteArrayOutputStream;
 import org.exist.storage.io.VariableByteBufferInput;
@@ -149,16 +149,16 @@ public class DayTimeDurationValue extends OrderedDurationValue {
         }
 
         //Copied from Saxon 8.6.1
-        final FastStringBuffer sb = new FastStringBuffer(32);
+        final UnicodeBuilder sb = new UnicodeBuilder(32);
         if (canonicalDuration.getSign() < 0) {
-            sb.cat('-');
+            sb.append('-');
         }
-        sb.cat('P');
+        sb.append('P');
         if (d != 0) {
             sb.append(d + "D");
         }
         if (d == 0 || h != 0 || m != 0 || s.intValue() != 0) {
-            sb.cat('T');
+            sb.append('T');
         }
         if (h != 0) {
             sb.append(h + "H");
