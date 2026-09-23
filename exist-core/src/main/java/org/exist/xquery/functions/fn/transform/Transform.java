@@ -48,7 +48,6 @@ package org.exist.xquery.functions.fn.transform;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.lacuna.bifurcan.IEntry;
-import net.sf.saxon.expr.parser.Location;
 import net.sf.saxon.om.StructuredQName;
 import net.sf.saxon.s9api.*;
 import net.sf.saxon.serialize.SerializationProperties;
