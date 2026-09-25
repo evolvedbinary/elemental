@@ -584,6 +584,12 @@
             <!-- scope>test</scope --> <!-- not just test scope, as needed for org.exist.test -->
         </dependency>
 
+        <dependency>
+            <groupId>de.bottlecaps</groupId>
+            <artifactId>markup-blitz</artifactId>
+            <version>1.12</version>
+        </dependency>
+
         <!-- test dependencies -->
         <dependency>
             <groupId>xyz.elemental.fork.org.exist-db</groupId>
@@ -793,6 +799,8 @@
                                 <include>src/test/java/org/exist/xquery/functions/xquery3/SerializeTest.java</include>
                                 <include>src/main/java/org/exist/xquery/value/ArrayWrapper.java</include>
                                 <include>src/test/java/org/exist/xquery/value/DateTimeTypesTest.java</include>
+                                <include>src/main/java/org/exist/xquery/functions/fn/FnInvisibleXml.java</include>
+                                <include>src/test/java/org/exist/xquery/functions/fn/FnInvisibleXmlTest.java</include>
                             </includes>
                         </licenseSet>
 
@@ -2339,6 +2347,8 @@
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnFormatDates.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnHasChildren.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnInnerMost.java</exclude>
+                                <exclude>src/main/java/org/exist/xquery/functions/fn/FnInvisibleXml.java</exclude>
+                                <exclude>src/test/java/org/exist/xquery/functions/fn/FnInvisibleXmlTest.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnModule.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FnOuterMost.java</exclude>
                                 <exclude>src/main/java/org/exist/xquery/functions/fn/FunAbs.java</exclude>

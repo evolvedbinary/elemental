@@ -328,6 +328,9 @@ public class ErrorCodes {
         FOXT0003 ("XSLT transformation failed"),
         FOXT0004 ("XSLT transformation has been disabled"),
         FOXT0006 ("XSLT output contains non-accepted characters"),
+        FOIX0001 ("Invalid Invisible XML grammar."),
+        FOIX0002 ("Input provided could not be parsed successfully."),
+        FOIX0003 ("No Invisible XML processor is available."),
         XTSE0165 ("It is a static error if the processor is not able to retrieve the resource identified by the URI reference [ in the href attribute of xsl:include or xsl:import] , or if the resource that is retrieved does not contain a stylesheet module conforming to this specification.");
 
         private final ErrorCode errorCode;
