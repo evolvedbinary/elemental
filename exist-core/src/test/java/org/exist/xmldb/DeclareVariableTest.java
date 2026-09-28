@@ -148,4 +148,23 @@ public class DeclareVariableTest {
         assertEquals(1, resourceSet.getSize());
         return resourceSet;
     }
+
+    @Test
+    public void declareExternalVariableWithDefaultUsesSuppliedValue() throws XMLDBException {
+        final XQueryService xqueryService = testCollection.getService(XQueryService.class);
+        xqueryService.declareVariable("x", "supplied");
+
+        final String query =
+                "xquery version \"3.1\";\n" +
+                        "declare variable $x external := \"default\";\n" +
+                        "$x";
+
+        final CompiledExpression compiled = xqueryService.compile(query);
+        try (final EXistResourceSet result = (EXistResourceSet) xqueryService.execute(compiled)) {
+            assertEquals(1, result.getSize());
+            final Resource resource = result.getResource(0);
+            assertNotNull(resource);
+            assertEquals("supplied", resource.getContent());
+        }
+    }
 }
