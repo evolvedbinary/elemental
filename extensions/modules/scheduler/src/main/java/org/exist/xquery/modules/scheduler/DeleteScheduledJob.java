@@ -61,8 +61,6 @@ public class DeleteScheduledJob extends BasicFunction
 			new FunctionReturnSequenceType( Type.BOOLEAN, Cardinality.EXACTLY_ONE, "a boolean value indicating success or failure on deleting the named job." )
 		);
 	
-    private Scheduler                     scheduler = null;
-
     /**
      * DeleteScheduledJob Constructor.
      *
@@ -72,8 +70,6 @@ public class DeleteScheduledJob extends BasicFunction
     public DeleteScheduledJob( XQueryContext context, FunctionSignature signature )
     {
         super( context, signature );
-
-        scheduler = context.getBroker().getBrokerPool().getScheduler();
     }
 
     /**
@@ -99,6 +95,7 @@ public class DeleteScheduledJob extends BasicFunction
             return( BooleanValue.FALSE );
         }
 
+        final Scheduler scheduler = context.getBroker().getBrokerPool().getScheduler();
         return( BooleanValue.valueOf( scheduler.deleteJob( jobName, UserJob.JOB_GROUP ) ) );
     }
 }
