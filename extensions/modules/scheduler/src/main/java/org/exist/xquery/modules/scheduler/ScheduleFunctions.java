@@ -350,7 +350,7 @@ public class ScheduleFunctions extends BasicFunction
 
         if( job != null ) {
 
-            Scheduler scheduler = context.getBroker().getBrokerPool().getScheduler();
+            final Scheduler scheduler = context.getBroker().getBrokerPool().getScheduler();
             if( isCron ) {
 
                 //schedule the job
