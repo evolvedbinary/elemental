@@ -214,25 +214,43 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
             try {
                 context.prologEnter(this);
                 if (expression.isPresent()) {
+                    @Nullable Variable suppliedVar = null;
+                    if (isExternal()){
+                        if (myModule != null) {
+                            if (myModule.isVarSet(qname)){
+                                suppliedVar = myModule.resolveVariable(qname);
+                            }
+                        } else {
+                            suppliedVar = context.resolveGlobalVariable(qname);
+                        }
+                    }
                     // normal variable declaration or external var with default value
-                    final Sequence seq = expression.get().eval(contextSequence, null);
                     final Variable var;
-                    if (myModule != null) {
-                        var = myModule.declareVariable(qname, external, seq);
+                    if (suppliedVar != null) {
+                        // a value was already supplied externally
+                        var = suppliedVar;
                         var.setSequenceType(sequenceType);
                         var.checkType();
                     } else {
-                        var = new VariableImpl(qname);
-                        var.setExternal(external);
-                        var.setValue(seq);
-                        var.setSequenceType(sequenceType);
-                        var.checkType();
-                        context.declareGlobalVariable(var);
+                        final Sequence seq = expression.get().eval(contextSequence, null);
+                        if (myModule != null) {
+                            var = myModule.declareVariable(qname, external, seq);
+                            var.setSequenceType(sequenceType);
+                            var.checkType();
+                        } else{
+                            var = new VariableImpl(qname);
+                            var.setExternal(external);
+                            var.setValue(seq);
+                            var.setSequenceType(sequenceType);
+                            var.checkType();
+                            context.declareGlobalVariable(var);
+                        }
+
                     }
 
                     if (context.getProfiler().isEnabled()) {
                         //Note : that we use seq but we return Sequence.EMPTY_SEQUENCE
-                        context.getProfiler().end(this, "", seq);
+                        context.getProfiler().end(this, "", var.getValue());
                     }
                 } else {
                     // external variable without default, try and get its value from the external environment (should have already been set in the global context)

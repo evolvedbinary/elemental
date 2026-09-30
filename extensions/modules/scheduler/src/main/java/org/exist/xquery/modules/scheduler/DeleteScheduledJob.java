@@ -95,7 +95,7 @@ public class DeleteScheduledJob extends BasicFunction
             return( BooleanValue.FALSE );
         }
 
-        Scheduler scheduler = context.getBroker().getBrokerPool().getScheduler();
+        final Scheduler scheduler = context.getBroker().getBrokerPool().getScheduler();
         return( BooleanValue.valueOf( scheduler.deleteJob( jobName, UserJob.JOB_GROUP ) ) );
     }
 }
