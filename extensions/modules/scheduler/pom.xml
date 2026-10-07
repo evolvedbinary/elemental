@@ -126,6 +126,16 @@
                 </configuration>
             </plugin>
         </plugins>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources-filtered</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
     </build>
 
     <dependencies>
@@ -143,6 +153,12 @@
         <dependency>
             <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
             <artifactId>xml-apis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>
