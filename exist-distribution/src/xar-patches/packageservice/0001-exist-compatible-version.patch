@@ -1,0 +1,22 @@
+--- a/modules/packages.xqm	2022-02-16 14:33:52
++++ b/modules/packages.xqm	2026-07-22 13:17:43
+@@ -288,7 +288,7 @@
+ (: should be private but there seems to be a bug :)
+ declare function packages:public-repo-contents($installed as element(repo-app)*) {
+     try {
+-        let $url := $config:DEFAULT-REPO || "/public/apps.xml?version=" || packages:get-version() ||
++        let $url := $config:DEFAULT-REPO || "/public/apps.xml?version=" || packages:get-existdb-compatible-version() ||
+             "&amp;source=" || util:system-property("product-source")
+         (: EXPath client module does not work properly. No idea why. :)
+         let $request :=
+@@ -323,8 +323,8 @@
+ };
+ 
+ (: should be private but there seems to be a bug :)
+-declare function packages:get-version() {
+-    (util:system-property("product-semver"), util:system-property("product-version"))[1]
++declare function packages:get-existdb-compatible-version() {
++    util:system-property("exist-db-expath-pkg-compatible-version")
+ };
+ 
+ (: should be private but there seems to be a bug :)

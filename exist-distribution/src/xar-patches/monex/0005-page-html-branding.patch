@@ -1,0 +1,29 @@
+--- a/templates/page.html
++++ b/templates/page.html
+@@ -10,7 +10,7 @@
+         <title data-template="config:app-title">App Title</title>
+         <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport"/>
+         <meta data-template="config:app-meta"/>
+-        <link rel="shortcut icon" href="resources/img/exist_icon_16x16.ico"/>
++        <link rel="shortcut icon" href="resources/img/elemental-favicon.ico"/>
+ 
+         <link href="resources/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+         <link href="resources/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+@@ -33,7 +33,7 @@
+             <header class="main-header">
+                 <a href="index.html" class="logo">
+                     <!-- Add the class icon to your logo image or logo icon to add the margining -->
+-                    <img src="resources/img/existdb-logo.png" height="40"/>
++                    <img src="resources/img/elemental-web.svg" height="40"/>
+                 </a>
+                 <!-- Header Navbar: style can be found in header.less -->
+                 <nav class="navbar navbar-static-top" role="navigation">
+@@ -131,7 +131,7 @@
+                         </li>
+                     </ul>
+                     <div class="powered-by">
+-                        <img src="resources/img/powered-by-whiteglass.svg"/>
++                        <img src="resources/img/elemental-web.svg"/>
+                     </div>
+                 </section>
+                 <!-- /.sidebar -->
