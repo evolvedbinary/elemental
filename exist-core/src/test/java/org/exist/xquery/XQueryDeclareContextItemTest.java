@@ -79,8 +79,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * Tests for XQuery 3.0's declare context item
@@ -141,6 +140,22 @@ public class XQueryDeclareContextItemTest {
             final Sequence result = queryResult.result;
             assertEquals(1, result.getItemCount());
             assertEquals(7, (int)result.itemAt(0).toJavaObject(int.class));
+        }
+    }
+
+    @Test
+    public void declareContextItemMoreThanOneItem() throws EXistException, PermissionDeniedException, XPathException, IOException {
+        final String query =
+                "xquery version \"3.0\";\n" +
+                "declare context item := (1,2); \n" +
+                ".";
+
+        final BrokerPool pool = existEmbeddedServer.getBrokerPool();
+        try (final DBBroker broker = pool.getBroker();
+             final XQueryUtil.QueryResult queryResult = XQueryUtil.query(broker, new StringSource(query), false, null, null, null, null, null)) {
+            fail("Expected XQuery error XPTY0004");
+        } catch (final XPathException e){
+            assertEquals(ErrorCodes.XPTY0004, e.getErrorCode());
         }
     }
 
