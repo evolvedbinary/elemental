@@ -70,7 +70,8 @@
   </scm>
 
     <properties>
-        <geotools.version>34.1</geotools.version>
+	<!-- TODO(AR): https://github.com/geotools/geotools/pull/6009 -->
+        <geotools.version>35.3-SNAPSHOT</geotools.version>
     </properties>
     
     <dependencies>
