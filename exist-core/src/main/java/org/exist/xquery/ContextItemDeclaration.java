@@ -76,9 +76,15 @@ public class ContextItemDeclaration extends AbstractExpression implements Rewrit
                 return null;
             }
         } else {
-            return value.get().eval(null, null);
+            final Sequence result = value.get().eval(null, null);
+            if (result.isEmpty() || result.hasMany()) {
+                throw new XPathException(this, ErrorCodes.XPTY0004, "The context item must be exactly one item");
+            } else {
+                return result;
+            }
         }
     }
+
 
     @Override
     public int returnsType() {
