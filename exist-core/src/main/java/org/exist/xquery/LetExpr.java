@@ -108,8 +108,6 @@ public class LetExpr extends BindingExpression {
                 var.setContextDocs(inputSequence.getContextDocSet());
                 registerUpdateListener(in);
 
-                resultSequence = returnExpr.eval(contextSequence, null);
-
                 if (sequenceType != null) {
                     Cardinality actualCardinality;
                     if (var.getValue().isEmpty()) {actualCardinality = Cardinality.EMPTY_SEQUENCE;}
@@ -166,6 +164,7 @@ public class LetExpr extends BindingExpression {
                         }
                     }
                 }
+                resultSequence = returnExpr.eval(contextSequence, null);
             } finally {
                 // Restore the local variable stack
                 context.popLocalVariables(mark, resultSequence);
