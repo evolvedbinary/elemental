@@ -2452,6 +2452,18 @@ public class XQueryTest {
         }
     }
 
+    @Test
+    public void typedForVariableWithEmptyReturn_5050() throws XMLDBException {
+       final String query = "for $x as xs:string in 'X' return ()";
+        try (final Collection testCollection = getTestCollection()) {
+           final XPathQueryService service = testCollection.getService(XPathQueryService.class);
+           try (final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+                assertEquals(0, result.getSize());
+           }
+        }
+    }
+
+
     /**
      * Regression
      *
