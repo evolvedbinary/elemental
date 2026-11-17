@@ -488,6 +488,7 @@ public class InteractiveClient {
                 }
             }
             completions.add(childCollections[i]);
+            i++;
         }
         for (String resourceId : childResources) {
             try (final EXistResource res = (EXistResource) getCollection().getResource(resourceId)) {
@@ -522,6 +523,7 @@ public class InteractiveClient {
                     }
                 }
                 completions.add(resourceId);
+                i++;
             }
         }
         if (options.startGUI) {
