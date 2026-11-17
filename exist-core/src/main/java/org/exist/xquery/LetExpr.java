@@ -108,6 +108,10 @@ public class LetExpr extends BindingExpression {
                 var.setContextDocs(inputSequence.getContextDocSet());
                 registerUpdateListener(in);
 
+                if (getPreviousClause() == null && returnExpr instanceof FLWORClause flworClause) {
+                    flworClause.preEval(in);
+                }
+
                 resultSequence = returnExpr.eval(contextSequence, null);
 
                 if (sequenceType != null) {
