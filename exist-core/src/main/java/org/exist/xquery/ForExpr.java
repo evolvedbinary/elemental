@@ -192,12 +192,12 @@ public class ForExpr extends BindingExpression {
         if (sequenceType != null) {
             //Type.EMPTY is *not* a subtype of other types ; checking cardinality first
             //only a check on empty sequence is accurate here
-            if (resultSequence.isEmpty() &&
-                    !sequenceType.getCardinality().isSuperCardinalityOrEqualOf(Cardinality.EMPTY_SEQUENCE))
-                {throw new XPathException(this, ErrorCodes.XPTY0004,
-                    "Invalid cardinality for variable $" + varName + ". Expected " +
-                    sequenceType.getCardinality().getHumanDescription() +
-                    ", got " + Cardinality.EMPTY_SEQUENCE.getHumanDescription());}
+//            if (resultSequence.isEmpty() &&
+//                    !sequenceType.getCardinality().isSuperCardinalityOrEqualOf(Cardinality.EMPTY_SEQUENCE))
+//                {throw new XPathException(this, ErrorCodes.XPTY0004,
+//                    "Invalid cardinality for variable $" + varName + ". Expected " +
+//                    sequenceType.getCardinality().getHumanDescription() +
+//                    ", got " + Cardinality.EMPTY_SEQUENCE.getHumanDescription());}
             //TODO : ignore nodes right now ; they are returned as xs:untypedAtomicType
             if (!Type.subTypeOf(sequenceType.getPrimaryType(), Type.NODE)) {
                 if (!resultSequence.isEmpty() &&
