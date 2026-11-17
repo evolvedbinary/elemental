@@ -694,6 +694,12 @@
             <artifactId>fluent-hc</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-open-telemetry</artifactId>
+            <version>7.7.1-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
 
     </dependencies>
 

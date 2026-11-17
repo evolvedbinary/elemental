@@ -97,6 +97,7 @@ import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.PerformanceStats;
 import org.exist.xquery.PerformanceStatsService;
 import org.exist.xquery.XQuery;
+import xyz.elemental.otel.OpenTelemetryBrokerPoolService;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -527,6 +528,10 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         servicesManager.register(new ClasspathHelper());
 
         this.indexManager = servicesManager.register(new IndexManager(this));
+
+        //Open Telemetry Service
+        OpenTelemetryBrokerPoolService otel = new OpenTelemetryBrokerPoolService();
+        servicesManager.register(otel);
 
         //Get a manager to handle further collections configuration
         this.collectionConfigurationManager = servicesManager.register(new CollectionConfigurationManager(this));
