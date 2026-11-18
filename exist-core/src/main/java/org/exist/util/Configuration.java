@@ -553,7 +553,7 @@ public class Configuration implements ErrorHandler {
                 }
 
                 // 2. Add the exporter to the config
-                final List<TelemetryExporter> telemetryExporters = getProperty("telementry.exporters", () -> new ArrayList<>());
+                final List<TelemetryExporter> telemetryExporters = getProperty("telemetry.exporters", () -> new ArrayList<>());
                 telemetryExporters.add(new TelemetryExporter(
                         enabled,
                         protocol,

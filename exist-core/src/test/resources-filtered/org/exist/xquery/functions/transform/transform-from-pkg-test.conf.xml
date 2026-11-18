@@ -76,6 +76,12 @@
 
     </db-connection>
 
+    <telemetry>
+        <exporters>
+            <export enabled="no" protocol="OTLP" interval="1000" collector-uri="http://localhost:4317"/>
+        </exporters>
+    </telemetry>
+
     <lock-manager upgrade-check="false" warn-wait-on-read-for-write="false" paths-multi-writer="false">
 
         <lock-table disabled="false" trace-stack-depth="0"/>

@@ -2,7 +2,6 @@
 
 package org.exist.storage.xyz.elemental.otel;
 
-import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.BrokerPoolService;
