@@ -14,6 +14,7 @@
                 query-pool
                 recovery
                 watchdog
+            telemetry
             lock-manager
             repository
             binary-manager
@@ -389,6 +390,34 @@
 
     </db-connection>
 
+    <!--
+        Configures export of telemetry data.
+
+        Zero of more exporters may be specified.
+    -->
+    <telemetry>
+        <exporters>
+
+            <!--
+                Export telemetry data to a telemetry collector.
+
+                - enabled:
+                    if this attribute is set to 'yes', the exporter is enabled. (default: no)
+
+                - protocol:
+                    the protocol that the exporter and collector use to communicate.
+
+                - interval:
+                    telemetry will be sent to the collector every interval; specified in milliseconds. (default: 1000)
+
+                - collector-uri:
+                    the URI of the collector that will receive the telemetry.
+            -->
+
+            <export enabled="no" protocol="oltp" interval="1000" collector-uri="http://localhost:4317"/>
+
+        </exporters>
+    </telemetry>
 
     <!--
         Settings for the Database Lock Manager
