@@ -8,6 +8,7 @@ import org.exist.storage.BrokerPoolService;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
+import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetry;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
@@ -23,6 +24,7 @@ import java.util.List;
 public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
 
     @Nullable private OpenTelemetrySdk openTelemetrySdk = null;
+    @Nullable private RuntimeTelemetry runtimeTelemetry = null;
 
     private List<PeriodicMetricReader> periodicMetricReaderList = new ArrayList<>();
 
@@ -75,10 +77,17 @@ public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
         this.openTelemetrySdk = OpenTelemetrySdk.builder()
                 .setMeterProvider(meterProvider)
                 .buildAndRegisterGlobal();
+
+        // register the JVM instruments
+        this.runtimeTelemetry = RuntimeTelemetry.create(this.openTelemetrySdk);
     }
 
     @Override
     public void shutdown() {
+        if (runtimeTelemetry != null) {
+            runtimeTelemetry.close();
+            runtimeTelemetry = null;
+        }
         if (openTelemetrySdk != null) {
             openTelemetrySdk.close();
             openTelemetrySdk = null;
