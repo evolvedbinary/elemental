@@ -97,6 +97,7 @@ public class Restore {
         // count all files
         long totalNrOfFiles = 0;
         for (BackupDescriptor backupDescriptor : descriptors) {
+            if (!isInsideAnotherDescriptor(backupDescriptor, descriptors))
             totalNrOfFiles += backupDescriptor.getNumberOfFiles();
         }
 
@@ -130,6 +131,23 @@ public class Restore {
                 parserPool.returnXMLReader(reader);
             }
         }
+    }
+
+    private boolean isInsideAnotherDescriptor(final BackupDescriptor descriptor, final Deque<BackupDescriptor> descriptors) {
+        final String pathToCheck = descriptor.getSymbolicPath();
+        for (final BackupDescriptor otherDescriptor : descriptors) {
+            if (otherDescriptor == (descriptor)) {
+                continue;
+            }
+            final String otherPathDescriptorPath = otherDescriptor.getSymbolicPath();
+            if(otherPathDescriptorPath.endsWith(BackupDescriptor.COLLECTION_DESCRIPTOR)) {
+                final String outerFolder = otherPathDescriptorPath.substring(0, otherPathDescriptorPath.length() - BackupDescriptor.COLLECTION_DESCRIPTOR.length());
+                if (pathToCheck.startsWith(outerFolder)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     
     private Deque<BackupDescriptor> getBackupDescriptors(Path contents) throws IOException {
