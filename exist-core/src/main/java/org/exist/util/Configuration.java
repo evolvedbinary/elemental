@@ -91,21 +91,17 @@ import org.exist.xslt.TransformerFactoryAllocator;
 
 import java.io.IOException;
 import java.io.InputStream;
-
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Duration;
+import java.time.temporal.TemporalUnit;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Properties;
 import java.util.function.Function;
-
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -138,30 +134,7 @@ import static org.exist.Indexer.PROPERTY_PRESERVE_WS_MIXED_CONTENT;
 import static org.exist.Indexer.PROPERTY_SUPPRESS_WHITESPACE;
 import static org.exist.Indexer.SUPPRESS_WHITESPACE_ATTRIBUTE;
 import static org.exist.collections.CollectionCache.PROPERTY_CACHE_SIZE_BYTES;
-import static org.exist.storage.BrokerPoolConstants.CONFIGURATION_CONNECTION_ELEMENT_NAME;
-import static org.exist.storage.BrokerPoolConstants.DATA_DIR_ATTRIBUTE;
-import static org.exist.storage.BrokerPoolConstants.DISK_SPACE_MIN_PROPERTY;
-import static org.exist.storage.BrokerPoolConstants.MAX_CONNECTIONS_ATTRIBUTE;
-import static org.exist.storage.BrokerPoolConstants.MIN_CONNECTIONS_ATTRIBUTE;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_COLLECTION_CACHE_SIZE;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_DATA_DIR;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_MAX_CONNECTIONS;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_MIN_CONNECTIONS;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_NODES_BUFFER;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_PAGE_SIZE;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_RECOVERY_CHECK;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_RECOVERY_ENABLED;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_RECOVERY_FORCE_RESTART;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_RECOVERY_GROUP_COMMIT;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_SHUTDOWN_DELAY;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_STARTUP_TRIGGERS;
-import static org.exist.storage.BrokerPoolConstants.PROPERTY_SYNC_PERIOD;
-import static org.exist.storage.BrokerPoolConstants.RECOVERY_ENABLED_ATTRIBUTE;
-import static org.exist.storage.BrokerPoolConstants.RECOVERY_FORCE_RESTART_ATTRIBUTE;
-import static org.exist.storage.BrokerPoolConstants.RECOVERY_GROUP_COMMIT_ATTRIBUTE;
-import static org.exist.storage.BrokerPoolConstants.RECOVERY_POST_RECOVERY_CHECK;
-import static org.exist.storage.BrokerPoolConstants.SHUTDOWN_DELAY_ATTRIBUTE;
-import static org.exist.storage.BrokerPoolConstants.SYNC_PERIOD_ATTRIBUTE;
+import static org.exist.storage.BrokerPoolConstants.*;
 import static org.exist.storage.DBBroker.POSIX_CHOWN_RESTRICTED_ATTRIBUTE;
 import static org.exist.storage.DBBroker.POSIX_CHOWN_RESTRICTED_PROPERTY;
 import static org.exist.storage.DBBroker.PRESERVE_ON_COPY_ATTRIBUTE;
@@ -406,6 +379,8 @@ public class Configuration implements ErrorHandler {
         configureElement(doc, JobConfig.CONFIGURATION_ELEMENT_NAME, this::configureScheduler);
         //db connection settings
         configureElement(doc, CONFIGURATION_CONNECTION_ELEMENT_NAME, element -> configureBackend(elementalHomePath, element));
+        // telemetry
+        configureElement(doc, CONFIGURATION_TELEMETRY_ELEMENT_NAME, this::configureTelemetry);
         // lock-table settings
         configureElement(doc, "lock-manager", this::configureLockManager);
         // repository settings
@@ -447,7 +422,27 @@ public class Configuration implements ErrorHandler {
     private void configureFirstElement(final NodeList nodeList, final ElementConfigurationAction action)
             throws DatabaseConfigurationException {
         if (nodeList.getLength() > 0) {
-            action.apply((Element)nodeList.item(0));
+            final Node node = nodeList.item(0);
+            if (node.getNodeType() == Node.ELEMENT_NODE) {
+                final Element element = (Element) node;
+                action.apply(element);
+            }
+        }
+    }
+
+    private void configureElements(final Element parent, final String elementName, final ElementConfigurationAction action)
+            throws DatabaseConfigurationException {
+        configureElements(parent.getElementsByTagName(elementName), action);
+    }
+
+    private void configureElements(final NodeList nodeList, final ElementConfigurationAction action)
+            throws DatabaseConfigurationException {
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            final Node node = nodeList.item(i);
+            if (node.getNodeType() == Node.ELEMENT_NODE) {
+                final Element element = (Element) node;
+                action.apply(element);
+            }
         }
     }
 
@@ -518,6 +513,55 @@ public class Configuration implements ErrorHandler {
             LOG.warn("Could not parse: {}, as an int: {}", value, e.getMessage());
             return defaultValue;
         }
+    }
+
+    private void configureTelemetry(final Element telemetry) throws DatabaseConfigurationException {
+
+        // TODO move all the hard coded strings to OpenTelemetryBrokerPoolService as constants
+        configureElement(telemetry, "exporters", exporters ->
+            configureElements(exporters, "export", export -> {
+
+                // 1. Get the attributes of the exporter
+
+                final boolean enabled = "yes".equals(getConfigAttributeValue(export, "enabled", "no").toLowerCase());
+                @Nullable final String protocol = getConfigAttributeValue(export, "protocol");
+                if (protocol == null) {
+                    // TODO LOG the error that we cannot configure this exporter as the @protocol is missing
+                    return;
+                }
+
+                final String strInterval = getConfigAttributeValue(export, "interval", "1000");
+                Duration interval;
+                try {
+                    interval = Duration.ofMillis(Integer.parseInt(strInterval));
+                } catch (final NumberFormatException e) {
+                    // TODO LOG the error and set to default - 1000 anyway
+                    interval = Duration.ofMillis(1000);
+                }
+
+                @Nullable final String strCollectorUri = getConfigAttributeValue(export, "collector-uri");
+                if (strCollectorUri == null) {
+                    // TODO LOG the error that we cannot configure this exporter as the @collector-uri is missing
+                    return;
+                }
+                URI collectorUri;
+                try {
+                  collectorUri = new URI(strCollectorUri);
+                } catch (final URISyntaxException e) {
+                    // TODO LOG the error that we cannot configure this exporter as the @collector-uri is not a valid URI
+                    return;
+                }
+
+                // 2. Add the exporter to the config
+                final List<TelemetryExporter> telemetryExporters = getProperty("telementry.exporters", () -> new ArrayList<>());
+                telemetryExporters.add(new TelemetryExporter(
+                        enabled,
+                        protocol,
+                        interval,
+                        collectorUri
+                ));
+            })
+        );
     }
 
     private void configureLockManager(final Element lockManager) throws DatabaseConfigurationException {
@@ -1337,6 +1381,21 @@ public class Configuration implements ErrorHandler {
      * @return The value of the attribute, or null if the attribute does not exist or has an empty value
      */
     private @Nullable String getConfigAttributeValue(final Element element, final String attributeName) {
+        getConfigAttributeValue(element, attributeName, null);
+    }
+
+    /**
+     * Gets the value of a configuration attribute
+     * <p>
+     * The value typically is specified in the conf.xml file, but can be overridden with using a System Property
+     *
+     * @param element The attribute's parent element
+     * @param attributeName The name of the attribute
+     * @param defaultValue The default value (or null)
+     *
+     * @return The value of the attribute, or the defaultValue if the attribute does not exist or has an empty value
+     */
+    private @Nullable String getConfigAttributeValue(final Element element, final String attributeName, @Nullable final String defaultValue) {
         if (element == null || attributeName == null) {
             return null;
         }
@@ -1348,8 +1407,14 @@ public class Configuration implements ErrorHandler {
             LOG.warn("Configuration value overridden by system property: {}, with value: {}", property, value);
             return value;
         }
+
         // If the value has not been overridden in a system property, then get it from the configuration
-        return nullIfEmpty(element.getAttribute(attributeName));
+        @Nullable final String attrValue = nullIfEmpty(element.getAttribute(attributeName));
+        if (attrValue != null) {
+            return attrValue;
+        }
+
+        return defaultValue;
     }
 
     private <T> void configureProperty(final Element element, final String attributeName, final String propertyName,
@@ -1432,7 +1497,12 @@ public class Configuration implements ErrorHandler {
     }
 
     public <T> T getProperty(final String name, final T defaultValue) {
-        return Optional.ofNullable((T) config.get(name)).orElse(defaultValue);
+        return getProperty(name, () -> defaultValue);
+    }
+
+    public <T> T getProperty(final String name, final Supplier<T> defaultValue) {
+        return Optional.ofNullable((T) config.get(name))
+                .orElse(defaultValue.get());
     }
 
     public boolean hasProperty(final String name) {
@@ -1499,6 +1569,9 @@ public class Configuration implements ErrorHandler {
     }
 
     public record IndexModuleConfig(String id, String className, Element config) {
+    }
+
+    public record TelemetryExporter(boolean enabled, String protocol, Duration interval, URI collecctorUri) {
     }
 
 }

@@ -44,6 +44,7 @@ public interface BrokerPoolConstants {
     String SIGNAL_ABORTED = "aborted";
 
     String CONFIGURATION_CONNECTION_ELEMENT_NAME = "db-connection";
+    String CONFIGURATION_TELEMETRY_ELEMENT_NAME = "telemetry";
     String CONFIGURATION_STARTUP_ELEMENT_NAME = "startup";
     String CONFIGURATION_POOL_ELEMENT_NAME = "pool";
     String CONFIGURATION_RECOVERY_ELEMENT_NAME = "recovery";

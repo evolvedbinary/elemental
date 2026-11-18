@@ -414,8 +414,7 @@
                     the URI of the collector that will receive the telemetry.
             -->
 
-            <export enabled="no" protocol="oltp" interval="1000" collector-uri="http://localhost:4317"/>
-
+            <export enabled="no" protocol="OTLP" interval="1000" collector-uri="http://localhost:4317"/>
         </exporters>
     </telemetry>
 

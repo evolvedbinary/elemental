@@ -24,19 +24,28 @@ public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
 
     @Nullable private URI collectorUri = null;
     @Nullable private Duration exportInterval;
+    @Nullable private Boolean enableTelemetry;
 
     @Override
     public void configure(final Configuration configuration) throws BrokerPoolServiceException {
+        this.enableTelemetry = configuration.getProperty("telemetry.exporters.export.enabled").equals(true);
+        if(!this.enableTelemetry) {
+            return;
+        }
         // OTLP/gRPC (4317) and OTLP/HTTP (4318)
         // "http://localhost:4317"
-        this.collectorUri = configuration.getProperty();
+        this.collectorUri = URI.create(configuration.getProperty("telemetry.exporters.export.collector-uri").toString());
         // Duration.ofSeconds(10)
-        this.exportInterval = configuration.getProperty();
+        this.exportInterval = Duration.ofMillis((Long) configuration.getProperty("telemetry.exporters.export.interval"));
     }
 
     @Override
     public void prepare(final BrokerPool brokerPool) throws BrokerPoolServiceException {
         final String instanceId = brokerPool.getId();
+        // safeguard when there's no enabled config
+        if(!this.enableTelemetry) {
+            return;
+        }
 
         final Resource resource = Resource.getDefault().merge(
                 Resource.create(Attributes.of(
