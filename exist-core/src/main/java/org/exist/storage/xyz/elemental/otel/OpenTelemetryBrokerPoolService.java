@@ -17,8 +17,6 @@ import org.exist.util.Configuration;
 import org.exist.util.Configuration.TelemetryExporter;
 
 import javax.annotation.Nullable;
-import java.net.URI;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,9 +24,6 @@ public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
 
     @Nullable private OpenTelemetrySdk openTelemetrySdk = null;
 
-    @Nullable private URI collectorUri = null;
-    @Nullable private Duration exportInterval;
-    @Nullable private Boolean enableTelemetry;
     private List<PeriodicMetricReader> periodicMetricReaderList = new ArrayList<>();
 
     @Override

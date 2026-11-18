@@ -560,6 +560,8 @@ public class Configuration implements ErrorHandler {
                         interval,
                         collectorUri
                 ));
+
+                setProperty("telemetry.exporters", telemetryExporters);
             })
         );
     }

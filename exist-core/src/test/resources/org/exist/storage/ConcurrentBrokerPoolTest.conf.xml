@@ -45,6 +45,12 @@
 
     </db-connection>
 
+    <telemetry>
+        <exporters>
+            <export enabled="no" protocol="OTLP" interval="1000" collector-uri="http://localhost:4317"/>
+        </exporters>
+    </telemetry>
+
     <repository root="/db/apps"/>
 
     <binary-manager>

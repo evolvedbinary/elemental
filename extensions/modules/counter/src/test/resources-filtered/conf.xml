@@ -72,6 +72,12 @@
         <watchdog output-size-limit="1000000" query-timeout="-1"/>
 
     </db-connection>
+    
+    <telemetry>
+        <exporters>
+            <export enabled="no" protocol="OTLP" interval="1000" collector-uri="http://localhost:4317"/>
+        </exporters>
+    </telemetry>
 
     <lock-manager upgrade-check="false" warn-wait-on-read-for-write="false" paths-multi-writer="false">
 
