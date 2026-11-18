@@ -474,6 +474,59 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="telemetry">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="exporters" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="export" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:attribute name="enabled" type="yes_no" default="no">
+                                                    <xs:annotation>
+                                                        <xs:documentation>
+                                                            Enable or disable the exporter.
+                                                        </xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="protocol" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>
+                                                            The protocol that the exporter and collector use to communicate.
+                                                        </xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:simpleType>
+                                                        <xs:restriction base="xs:string">
+                                                            <xs:enumeration value="OTLP">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>OpenTelemetry Protocol</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:enumeration>
+                                                        </xs:restriction>
+                                                    </xs:simpleType>
+                                                </xs:attribute>
+                                                <xs:attribute name="interval" type="xs:int" default="1000">
+                                                    <xs:annotation>
+                                                        <xs:documentation>
+                                                            Telemetry will be sent to the collector every interval; specified in milliseconds.
+                                                        </xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="collector-uri" type="xs:anyURI" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>
+                                                            The URI of the collector that will receive the telemetry.
+                                                        </xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="lock-manager">
                     <xs:complexType>
                         <xs:sequence>
