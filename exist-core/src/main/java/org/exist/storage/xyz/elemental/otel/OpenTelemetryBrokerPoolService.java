@@ -1,7 +1,9 @@
 // TODO license
 
-package xyz.elemental.otel;
+package org.exist.storage.xyz.elemental.otel;
 
+import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.BrokerPoolService;
 import io.opentelemetry.api.common.AttributeKey;
@@ -13,10 +15,13 @@ import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import org.exist.storage.BrokerPoolServiceException;
 import org.exist.util.Configuration;
+import org.exist.util.Configuration.TelemetryExporter;
 
 import javax.annotation.Nullable;
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
 
@@ -25,25 +30,38 @@ public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
     @Nullable private URI collectorUri = null;
     @Nullable private Duration exportInterval;
     @Nullable private Boolean enableTelemetry;
+    private List<PeriodicMetricReader> periodicMetricReaderList = new ArrayList<>();
 
     @Override
     public void configure(final Configuration configuration) throws BrokerPoolServiceException {
-        this.enableTelemetry = configuration.getProperty("telemetry.exporters.export.enabled").equals(true);
-        if(!this.enableTelemetry) {
+        final List<TelemetryExporter> telemetryExporters = (List<TelemetryExporter>) configuration.getProperty("telemetry.exporters");
+
+        if(telemetryExporters == null) {
             return;
         }
-        // OTLP/gRPC (4317) and OTLP/HTTP (4318)
-        // "http://localhost:4317"
-        this.collectorUri = URI.create(configuration.getProperty("telemetry.exporters.export.collector-uri").toString());
-        // Duration.ofSeconds(10)
-        this.exportInterval = Duration.ofMillis((Long) configuration.getProperty("telemetry.exporters.export.interval"));
+        // for each config of the list we need to build one
+        for(TelemetryExporter exporter : telemetryExporters) {
+            if(!exporter.enabled()) {
+                continue;
+            }
+            //TODO choose the right  PeriodicMetricReader based on protocol
+            final PeriodicMetricReader periodicMetricReader = PeriodicMetricReader.builder(
+                            OtlpGrpcMetricExporter.builder()
+                                    .setEndpoint(String.valueOf(exporter.collecctorUri()))
+                                    .build())
+                    .setInterval(exporter.interval())
+                    .build();
+            this.periodicMetricReaderList.add(periodicMetricReader);
+        }
+
+
     }
 
     @Override
     public void prepare(final BrokerPool brokerPool) throws BrokerPoolServiceException {
         final String instanceId = brokerPool.getId();
         // safeguard when there's no enabled config
-        if(!this.enableTelemetry) {
+        if(this.periodicMetricReaderList.isEmpty()) {
             return;
         }
 
@@ -51,16 +69,14 @@ public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
                 Resource.create(Attributes.of(
                         AttributeKey.stringKey("service.name"), instanceId)));
 
-        final SdkMeterProvider meterProvider = SdkMeterProvider.builder()
-                .setResource(resource)
-                .registerMetricReader(
-                        PeriodicMetricReader.builder(
-                                        OtlpGrpcMetricExporter.builder()
-                                                .setEndpoint(collectorUri.toString())
-                                                .build())
-                                .setInterval(exportInterval)
-                                .build())
-                .build();
+        final SdkMeterProviderBuilder meterProviderBuilder = SdkMeterProvider.builder().setResource(resource);
+
+
+        for(PeriodicMetricReader periodicMetricReader : this.periodicMetricReaderList) {
+            meterProviderBuilder.registerMetricReader(periodicMetricReader);
+        }
+
+        final SdkMeterProvider meterProvider = meterProviderBuilder.build();
 
         this.openTelemetrySdk = OpenTelemetrySdk.builder()
                 .setMeterProvider(meterProvider)

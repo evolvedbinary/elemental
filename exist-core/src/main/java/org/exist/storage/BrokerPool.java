@@ -91,13 +91,13 @@ import org.exist.storage.sync.SyncTask;
 import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
+import org.exist.storage.xyz.elemental.otel.OpenTelemetryBrokerPoolService;
 import org.exist.util.*;
 import org.exist.xmldb.ShutdownListener;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.PerformanceStats;
 import org.exist.xquery.PerformanceStatsService;
 import org.exist.xquery.XQuery;
-import xyz.elemental.otel.OpenTelemetryBrokerPoolService;
 
 import java.io.IOException;
 import java.io.PrintWriter;

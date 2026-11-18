@@ -1381,7 +1381,7 @@ public class Configuration implements ErrorHandler {
      * @return The value of the attribute, or null if the attribute does not exist or has an empty value
      */
     private @Nullable String getConfigAttributeValue(final Element element, final String attributeName) {
-        getConfigAttributeValue(element, attributeName, null);
+        return getConfigAttributeValue(element, attributeName, null);
     }
 
     /**
