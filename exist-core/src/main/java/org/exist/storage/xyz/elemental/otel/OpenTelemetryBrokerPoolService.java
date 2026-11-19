@@ -36,6 +36,17 @@ import static io.opentelemetry.api.common.AttributeKey.stringKey;
 public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
     private static final Logger LOG = LogManager.getLogger(Configuration.class); //Logger
 
+    // org.exist.util.Configuration properties
+    public final static String SERVICE_NAME = "service-name";
+    public final static String HOST_NAME = "host-name";
+    public final static String TELEMETRY_ELEMENT_NAME = "telemetry";
+    public final static String TELEMETRY_EXPORTERS_ELEMENT_NAME = "telemetry.exporters";
+    public final static String EXPORTERS_ELEMENT_NAME = "exporters";
+    public final static String EXPORT_ELEMENT_NAME = "export";
+    public final static String PROTOCOL = "protocol";
+    public final static String ENABLED = "enabled";
+    public final static String INTERVAL = "interval";
+    public final static String COLLECTOR_URI =  "collector-uri";
 
     @Nullable private OpenTelemetrySdk openTelemetrySdk = null;
     @Nullable private RuntimeTelemetry runtimeTelemetry = null;

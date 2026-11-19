@@ -58,6 +58,7 @@ import org.exist.start.Main;
 import org.exist.storage.BrokerPoolConstants;
 import org.exist.storage.lock.LockManager;
 import org.exist.storage.lock.LockTable;
+import org.exist.storage.xyz.elemental.otel.OpenTelemetryBrokerPoolService;
 import org.exist.util.io.ContentFilePool;
 import org.exist.xquery.Expression;
 import org.exist.xquery.PerformanceStats;
@@ -519,8 +520,8 @@ public class Configuration implements ErrorHandler {
 
     private void configureTelemetry(final Element telemetry) throws DatabaseConfigurationException {
         // carry the telemetry attributes
-        @Nullable final String serviceName = getConfigAttributeValue(telemetry, "service-name");
-        @Nullable final String hostName = getConfigAttributeValue(telemetry, "host-name", () -> {
+        @Nullable final String serviceName = getConfigAttributeValue(telemetry, OpenTelemetryBrokerPoolService.SERVICE_NAME);
+        @Nullable final String hostName = getConfigAttributeValue(telemetry, OpenTelemetryBrokerPoolService.HOST_NAME, () -> {
             try {
                 return InetAddress.getLocalHost().getHostName();
             } catch (final UnknownHostException e) {
@@ -529,22 +530,21 @@ public class Configuration implements ErrorHandler {
             }
         });
 
-        setProperty("telemetry", new TelemetryData(serviceName, hostName));
+        setProperty(OpenTelemetryBrokerPoolService.TELEMETRY_ELEMENT_NAME, new TelemetryData(serviceName, hostName));
 
-        // TODO(YB) move all the hard coded strings to OpenTelemetryBrokerPoolService as constants
-        configureElement(telemetry, "exporters", exporters ->
-            configureElements(exporters, "export", export -> {
+            configureElement(telemetry, OpenTelemetryBrokerPoolService.EXPORTERS_ELEMENT_NAME, exporters ->
+            configureElements(exporters, OpenTelemetryBrokerPoolService.EXPORT_ELEMENT_NAME, export -> {
 
                 // 1. Get the attributes of the exporter
 
-                final boolean enabled = "yes".equals(getConfigAttributeValue(export, "enabled", "no").toLowerCase());
-                @Nullable final String protocol = getConfigAttributeValue(export, "protocol");
+                final boolean enabled = "yes".equals(getConfigAttributeValue(export, OpenTelemetryBrokerPoolService.ENABLED, "no").toLowerCase());
+                @Nullable final String protocol = getConfigAttributeValue(export, OpenTelemetryBrokerPoolService.PROTOCOL);
                 if (protocol == null) {
                     // TODO(YB) LOG the error that we cannot configure this exporter as the @protocol is missing
                     return;
                 }
 
-                final String strInterval = getConfigAttributeValue(export, "interval", "1000");
+                final String strInterval = getConfigAttributeValue(export, OpenTelemetryBrokerPoolService.INTERVAL, "1000");
                 Duration interval;
                 try {
                     interval = Duration.ofMillis(Integer.parseInt(strInterval));
@@ -553,7 +553,7 @@ public class Configuration implements ErrorHandler {
                     interval = Duration.ofMillis(1000);
                 }
 
-                @Nullable final String strCollectorUri = getConfigAttributeValue(export, "collector-uri");
+                @Nullable final String strCollectorUri = getConfigAttributeValue(export, OpenTelemetryBrokerPoolService.COLLECTOR_URI);
                 if (strCollectorUri == null) {
                     // TODO(YB) LOG the error that we cannot configure this exporter as the @collector-uri is missing
                     return;
@@ -567,7 +567,7 @@ public class Configuration implements ErrorHandler {
                 }
 
                 // 2. Add the exporter to the config
-                final List<TelemetryExporter> telemetryExporters = getProperty("telemetry.exporters", () -> new ArrayList<>());
+                final List<TelemetryExporter> telemetryExporters = getProperty(OpenTelemetryBrokerPoolService.TELEMETRY_EXPORTERS_ELEMENT_NAME, () -> new ArrayList<>());
                 telemetryExporters.add(new TelemetryExporter(
                         enabled,
                         protocol,
@@ -575,7 +575,7 @@ public class Configuration implements ErrorHandler {
                         collectorUri
                 ));
 
-                setProperty("telemetry.exporters", telemetryExporters);
+                setProperty(OpenTelemetryBrokerPoolService.TELEMETRY_EXPORTERS_ELEMENT_NAME, telemetryExporters);
             })
         );
     }
