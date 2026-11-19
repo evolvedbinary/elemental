@@ -4,6 +4,8 @@ package org.exist.storage.xyz.elemental.otel;
 
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.instrumentation.log4j.*;
+import io.opentelemetry.instrumentation.log4j.appender.v2_17.OpenTelemetryAppender;
 import io.opentelemetry.sdk.metrics.InstrumentSelector;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.metrics.View;
@@ -121,11 +123,7 @@ public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
         // register the JVM instruments
         this.runtimeTelemetry = RuntimeTelemetry.create(this.openTelemetrySdk);
 
-        Meter meter = this.openTelemetrySdk.getMeter("org.exist.storage.xyz.elemental.otel");
-
-        LongCounter counter = meter.counterBuilder("version_number").build();
-        counter.add(1);
-
+        OpenTelemetryAppender.install(openTelemetrySdk);
     }
 
     @Override
