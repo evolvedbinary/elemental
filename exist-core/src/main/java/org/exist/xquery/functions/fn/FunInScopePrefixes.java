@@ -219,12 +219,13 @@ public class FunInScopePrefixes extends BasicFunction {
         //clean up
         String key = null;
         String value = null;
-        for (final Entry<String, String> entry : prefixes.entrySet()) {
+        for (final Iterator<Entry<String,String>> i = prefixes.entrySet().iterator(); i.hasNext(); ) {
+            final Entry<String, String> entry = i.next();
             key = entry.getKey();
             value = entry.getValue();
 
             if ((key == null || key.isEmpty()) && (value == null || value.isEmpty())) {
-                prefixes.remove(key);
+                i.remove();
             }
 
         }
