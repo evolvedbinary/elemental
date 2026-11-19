@@ -2233,6 +2233,31 @@ public class XQueryTest {
         }
     }
 
+    @Test
+    public void letTypeErrorReportedOnFirstVariable () throws XMLDBException {
+        try{
+            final String query = "let $input as xs:string := () " +
+                    "let $output as xs:string := $input " +
+                    "return $output";
+
+            try (final Collection testCollection = getTestCollection()) {
+                final XPathQueryService service = testCollection.getService(XPathQueryService.class);
+
+                try(final EXistResourceSet result = (EXistResourceSet) service.query(query)) {
+                    // needed to ensure that result is closed
+
+                }
+
+                fail("Expected XPTY0004 error for $input");
+            }
+        } catch (XMLDBException e) {
+            if (!e.getMessage().contains("$input")) {
+                LOG.error(e.getMessage(), e);
+                fail(e.getMessage());
+            }
+        }
+    }
+
     /**
      * <a href="http://sourceforge.net/support/tracker.php?aid=1740885">http://sourceforge.net/support/tracker.php?aid=1740885</a>
      */
