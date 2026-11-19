@@ -538,9 +538,10 @@ public class Configuration implements ErrorHandler {
                 // 1. Get the attributes of the exporter
 
                 final boolean enabled = "yes".equals(getConfigAttributeValue(export, OpenTelemetryBrokerPoolService.ENABLED, "no").toLowerCase());
+                // TODO(YB): Check the protocl value against the supported list.
                 @Nullable final String protocol = getConfigAttributeValue(export, OpenTelemetryBrokerPoolService.PROTOCOL);
                 if (protocol == null) {
-                    // TODO(YB) LOG the error that we cannot configure this exporter as the @protocol is missing
+                    LOG.error("Missing required config element @protocol. Cannot configure this exporter as the @protocol is missing");
                     return;
                 }
 
@@ -549,20 +550,20 @@ public class Configuration implements ErrorHandler {
                 try {
                     interval = Duration.ofMillis(Integer.parseInt(strInterval));
                 } catch (final NumberFormatException e) {
-                    // TODO(YB) LOG the error and set to default - 1000 anyway
+                    LOG.warn("No value was set for exporter @interval, using the default 1000ms");
                     interval = Duration.ofMillis(1000);
                 }
 
                 @Nullable final String strCollectorUri = getConfigAttributeValue(export, OpenTelemetryBrokerPoolService.COLLECTOR_URI);
                 if (strCollectorUri == null) {
-                    // TODO(YB) LOG the error that we cannot configure this exporter as the @collector-uri is missing
+                    LOG.error("Missing required config element @collector-uri. Cannot configure this exporter as the @collector-uri is missing");
                     return;
                 }
                 URI collectorUri;
                 try {
                   collectorUri = new URI(strCollectorUri);
                 } catch (final URISyntaxException e) {
-                    // TODO(YB) LOG the error that we cannot configure this exporter as the @collector-uri is not a valid URI
+                    LOG.error("Malformed value for @collector-uri: {}, Cannot configure this exporter", strCollectorUri);
                     return;
                 }
 
