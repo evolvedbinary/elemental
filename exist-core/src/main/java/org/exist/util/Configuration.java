@@ -516,7 +516,11 @@ public class Configuration implements ErrorHandler {
     }
 
     private void configureTelemetry(final Element telemetry) throws DatabaseConfigurationException {
+        // carry the telemetry attributes
+        @Nullable final String serviceName = getConfigAttributeValue(telemetry, "service-name");
+        @Nullable final String hostName = getConfigAttributeValue(telemetry, "host-name");
 
+        setProperty("telemetry", new TelemetryData(serviceName, hostName));
         // TODO move all the hard coded strings to OpenTelemetryBrokerPoolService as constants
         configureElement(telemetry, "exporters", exporters ->
             configureElements(exporters, "export", export -> {
@@ -1574,6 +1578,10 @@ public class Configuration implements ErrorHandler {
     }
 
     public record TelemetryExporter(boolean enabled, String protocol, Duration interval, URI collecctorUri) {
+    }
+
+    public record TelemetryData(String serviceName, String hostName) {
+
     }
 
 }
