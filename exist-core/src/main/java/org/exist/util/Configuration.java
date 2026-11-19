@@ -91,8 +91,10 @@ import org.exist.xslt.TransformerFactoryAllocator;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -518,10 +520,18 @@ public class Configuration implements ErrorHandler {
     private void configureTelemetry(final Element telemetry) throws DatabaseConfigurationException {
         // carry the telemetry attributes
         @Nullable final String serviceName = getConfigAttributeValue(telemetry, "service-name");
-        @Nullable final String hostName = getConfigAttributeValue(telemetry, "host-name");
+        @Nullable final String hostName = getConfigAttributeValue(telemetry, "host-name", () -> {
+            try {
+                return InetAddress.getLocalHost().getHostName();
+            } catch (final UnknownHostException e) {
+                LOG.error("Unable to determine the hostname: {}", e.getMessage(), e);
+                return "unknown-host";
+            }
+        });
 
         setProperty("telemetry", new TelemetryData(serviceName, hostName));
-        // TODO move all the hard coded strings to OpenTelemetryBrokerPoolService as constants
+
+        // TODO(YB) move all the hard coded strings to OpenTelemetryBrokerPoolService as constants
         configureElement(telemetry, "exporters", exporters ->
             configureElements(exporters, "export", export -> {
 
@@ -530,7 +540,7 @@ public class Configuration implements ErrorHandler {
                 final boolean enabled = "yes".equals(getConfigAttributeValue(export, "enabled", "no").toLowerCase());
                 @Nullable final String protocol = getConfigAttributeValue(export, "protocol");
                 if (protocol == null) {
-                    // TODO LOG the error that we cannot configure this exporter as the @protocol is missing
+                    // TODO(YB) LOG the error that we cannot configure this exporter as the @protocol is missing
                     return;
                 }
 
@@ -539,20 +549,20 @@ public class Configuration implements ErrorHandler {
                 try {
                     interval = Duration.ofMillis(Integer.parseInt(strInterval));
                 } catch (final NumberFormatException e) {
-                    // TODO LOG the error and set to default - 1000 anyway
+                    // TODO(YB) LOG the error and set to default - 1000 anyway
                     interval = Duration.ofMillis(1000);
                 }
 
                 @Nullable final String strCollectorUri = getConfigAttributeValue(export, "collector-uri");
                 if (strCollectorUri == null) {
-                    // TODO LOG the error that we cannot configure this exporter as the @collector-uri is missing
+                    // TODO(YB) LOG the error that we cannot configure this exporter as the @collector-uri is missing
                     return;
                 }
                 URI collectorUri;
                 try {
                   collectorUri = new URI(strCollectorUri);
                 } catch (final URISyntaxException e) {
-                    // TODO LOG the error that we cannot configure this exporter as the @collector-uri is not a valid URI
+                    // TODO(YB) LOG the error that we cannot configure this exporter as the @collector-uri is not a valid URI
                     return;
                 }
 
@@ -1387,7 +1397,7 @@ public class Configuration implements ErrorHandler {
      * @return The value of the attribute, or null if the attribute does not exist or has an empty value
      */
     private @Nullable String getConfigAttributeValue(final Element element, final String attributeName) {
-        return getConfigAttributeValue(element, attributeName, null);
+        return getConfigAttributeValue(element, attributeName, (String) null);
     }
 
     /**
@@ -1402,6 +1412,21 @@ public class Configuration implements ErrorHandler {
      * @return The value of the attribute, or the defaultValue if the attribute does not exist or has an empty value
      */
     private @Nullable String getConfigAttributeValue(final Element element, final String attributeName, @Nullable final String defaultValue) {
+        return getConfigAttributeValue(element, attributeName, () -> defaultValue);
+    }
+
+    /**
+     * Gets the value of a configuration attribute
+     * <p>
+     * The value typically is specified in the conf.xml file, but can be overridden with using a System Property
+     *
+     * @param element The attribute's parent element
+     * @param attributeName The name of the attribute
+     * @param defaultValue The default value supplier
+     *
+     * @return The value of the attribute, or the defaultValue if the attribute does not exist or has an empty value
+     */
+    private @Nullable String getConfigAttributeValue(final Element element, final String attributeName, final Supplier<String> defaultValue) {
         if (element == null || attributeName == null) {
             return null;
         }
@@ -1420,7 +1445,7 @@ public class Configuration implements ErrorHandler {
             return attrValue;
         }
 
-        return defaultValue;
+        return defaultValue.get();
     }
 
     private <T> void configureProperty(final Element element, final String attributeName, final String propertyName,
@@ -1580,7 +1605,7 @@ public class Configuration implements ErrorHandler {
     public record TelemetryExporter(boolean enabled, String protocol, Duration interval, URI collecctorUri) {
     }
 
-    public record TelemetryData(String serviceName, String hostName) {
+    public record TelemetryData(@Nullable String serviceName, String hostName) {
 
     }
 

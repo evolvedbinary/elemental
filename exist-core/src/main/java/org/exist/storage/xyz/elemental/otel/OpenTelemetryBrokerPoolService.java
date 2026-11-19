@@ -48,15 +48,15 @@ public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
         this.telemetryData = (TelemetryData) configuration.getProperty("telemetry");
         final List<TelemetryExporter> telemetryExporters = (List<TelemetryExporter>) configuration.getProperty("telemetry.exporters");
 
-        if(telemetryExporters == null) {
+        if (telemetryExporters == null) {
             return;
         }
         // for each config of the list we need to build one
-        for(TelemetryExporter exporter : telemetryExporters) {
-            if(!exporter.enabled()) {
+        for (TelemetryExporter exporter : telemetryExporters) {
+            if (!exporter.enabled()) {
                 continue;
             }
-            //TODO choose the right  PeriodicMetricReader based on protocol
+            //TODO(YB) choose the right  PeriodicMetricReader based on protocol
             final PeriodicMetricReader periodicMetricReader = PeriodicMetricReader.builder(
                             OtlpGrpcMetricExporter.builder()
                                     .setEndpoint(String.valueOf(exporter.collecctorUri()))
@@ -71,35 +71,27 @@ public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
 
     @Override
     public void prepare(final BrokerPool brokerPool) throws BrokerPoolServiceException {
-        // safeguard when there's no enabled config
-        if(this.periodicMetricReaderList.isEmpty()) {
+        // Skip when there's nothing to export
+        if (periodicMetricReaderList.isEmpty()) {
             return;
         }
 
-        final String instanceId =  this.telemetryData.serviceName() == null ? brokerPool.getId() : this.telemetryData.serviceName();
-        @Nullable String hostName;
-
-        try {
-            hostName =  this.telemetryData.hostName() == null ? InetAddress.getLocalHost().getHostName() : this.telemetryData.hostName();
-        } catch (UnknownHostException e) {
-            LOG.error("Unable to get the hostname", e.getMessage(), e);
-            // this is the worst possible case.
-            hostName = "no-host";
+        // if there is no service name configured, use the instance id (i.e. brokerPool id)
+        if (telemetryData.serviceName() == null) {
+            this.telemetryData = new TelemetryData(brokerPool.getId(), telemetryData.hostName());
         }
 
-        // Hostname -> host.name
-        // development.enviremnt dev prod //todo read the docs
-        //
+        // TODO(YB) development.enviremnt dev prod //todo read the docs
+
+
         final Resource resource = Resource.getDefault().merge(
-                // The limit is 6 Attributes be careful with it.
                 Resource.create(Attributes.of(
-                        stringKey("service.name"), instanceId,
-                        stringKey("host.name"), hostName)));
+                        stringKey("service.name"), telemetryData.serviceName(),
+                        stringKey("host.name"), telemetryData.hostName())));
 
         final SdkMeterProviderBuilder meterProviderBuilder = SdkMeterProvider.builder().setResource(resource);
 
-
-        for(PeriodicMetricReader periodicMetricReader : this.periodicMetricReaderList) {
+        for (PeriodicMetricReader periodicMetricReader : periodicMetricReaderList) {
             meterProviderBuilder.registerMetricReader(periodicMetricReader);
         }
 
