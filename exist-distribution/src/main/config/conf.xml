@@ -393,7 +393,14 @@
     <!--
         Configures export of telemetry data.
 
-        Zero of more exporters may be specified.
+        - service-name
+            A name to help identify Elemental in the collected telemetry. (default: the Elemental instance id)
+
+        - host-name
+            A name to identify the host server in the collected telemetry. (default: the network hostname)
+
+        - exporters
+            Zero of more exporters may be specified.
     -->
     <telemetry>
         <exporters>

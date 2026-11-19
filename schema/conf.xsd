@@ -525,6 +525,20 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
+                        <xs:attribute name="service-name">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    A name to help identify Elemental in the collected telemetry. (default: the Elemental instance id)
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="host-name">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    A name to identify the host server in the collected telemetry. (default: the network hostname)
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="lock-manager">
