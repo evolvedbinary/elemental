@@ -108,6 +108,10 @@ public class LetExpr extends BindingExpression {
                 var.setContextDocs(inputSequence.getContextDocSet());
                 registerUpdateListener(in);
 
+                if (getPreviousClause() == null && returnExpr instanceof FLWORClause flworClause) {
+                    flworClause.preEval(in);
+                }
+
                 resultSequence = returnExpr.eval(contextSequence, null);
 
                 if (sequenceType != null) {
@@ -173,13 +177,13 @@ public class LetExpr extends BindingExpression {
             clearContext(getExpressionId(), in);
             if (context.getProfiler().isEnabled())
                 {context.getProfiler().end(this, "", resultSequence);}
+            if (getPreviousClause() == null) {
+                resultSequence = postEval(resultSequence);
+            }
             if (resultSequence == null)
                 {return Sequence.EMPTY_SEQUENCE;}
             if (!(resultSequence instanceof DeferredFunctionCall)) {
                 setActualReturnType(resultSequence.getItemType());
-            }
-            if (getPreviousClause() == null) {
-                resultSequence = postEval(resultSequence);
             }
             return resultSequence;
         } finally {
