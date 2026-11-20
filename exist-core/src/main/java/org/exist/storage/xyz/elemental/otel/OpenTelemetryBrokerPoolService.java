@@ -2,15 +2,19 @@
 
 package org.exist.storage.xyz.elemental.otel;
 
-import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.instrumentation.log4j.*;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
+import io.opentelemetry.exporter.logging.LoggingMetricExporter;
 import io.opentelemetry.instrumentation.log4j.appender.v2_17.OpenTelemetryAppender;
-import io.opentelemetry.sdk.metrics.InstrumentSelector;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
-import io.opentelemetry.sdk.metrics.View;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.exist.Version;
+import org.exist.repo.ExistRepository;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.BrokerPoolService;
 import io.opentelemetry.api.common.Attributes;
@@ -24,14 +28,14 @@ import org.exist.storage.BrokerPoolServiceException;
 import org.exist.util.Configuration;
 import org.exist.util.Configuration.TelemetryExporter;
 import org.exist.util.Configuration.TelemetryData;
-
+import org.exist.SystemProperties;
+import org.expath.pkg.repo.Packages;
 
 import javax.annotation.Nullable;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 
@@ -96,23 +100,33 @@ public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
 
         // TODO(YB) development.enviremnt dev prod //todo read the docs
 
-
+        // Load Resources
+//        vendor=Evolved Binary Ltd
+//        vendor-url=https://www.elemental.xyz
+//        product-name=Elemental
+//        product-version=${project.version}
+//        product-build=${project.build.outputTimestamp}
+//        git-branch=${build-version}
+//        git-commit=${build-commit}
+//        git-commit-timestamp=${build-tstamp}
+//        exist-db-expath-pkg-compatible-version=${exist-db.expath.pkg.compatible.version}
+        // TODO(YB) The resources should be built in a new function/class
+        Attributes attributes = Attributes.builder()
+                .put(stringKey("service.name"), telemetryData.serviceName())
+                .put(stringKey("host.name"), telemetryData.hostName())
+                .put(stringKey("service.version"), Version.getVersion() + "; " + Version.getGitCommit())
+                .put(stringKey("Java.version"), "21")
+                .put(stringKey("elemental.git.commit"), SystemProperties.getInstance().getSystemProperty("git-commit"))
+                .put(stringKey("elemental.vendor"), SystemProperties.getInstance().getSystemProperty("vendor"))
+                .build();
         final Resource resource = Resource.getDefault().merge(
-                Resource.create(Attributes.of(
-                        stringKey("service.name"), telemetryData.serviceName(),
-                        stringKey("host.name"), telemetryData.hostName())));
+                Resource.create(attributes));
 
         final SdkMeterProviderBuilder meterProviderBuilder = SdkMeterProvider.builder().setResource(resource);
 
         for (PeriodicMetricReader periodicMetricReader : periodicMetricReaderList) {
             meterProviderBuilder.registerMetricReader(periodicMetricReader);
         }
-
-        // Register a view
-        meterProviderBuilder.registerView(
-                InstrumentSelector.builder().setName("elemental_version").build(),
-                View.builder().build()
-        );
 
         final SdkMeterProvider meterProvider = meterProviderBuilder.build();
 
@@ -123,8 +137,37 @@ public class OpenTelemetryBrokerPoolService implements BrokerPoolService {
         // register the JVM instruments
         this.runtimeTelemetry = RuntimeTelemetry.create(this.openTelemetrySdk);
 
-        OpenTelemetryAppender.install(openTelemetrySdk);
+//        OpenTelemetryAppender.install(openTelemetrySdk);
+
+        // Send some metrics and they will hold all of the resources attributes
+
+        Meter meter = openTelemetrySdk.getMeter("xyz.elemental.otel");
+        meter.gaugeBuilder("app.info")
+                .ofLongs()
+                .setDescription("1 per running instance")
+                .buildWithCallback(m -> m.record(1));
+
+
+        ObservableLongMeasurement expathPackagesCounter = meter.gaugeBuilder("expath.number")
+                .ofLongs()
+                .setDescription("Number of installed Expath packages")
+                .buildObserver();
+        expathPackagesCounter.record(1);
+        expathPackagesCounter.record(2);
+        expathPackagesCounter.record(3);
+        expathPackagesCounter.record(4);
+
+        // How do we get installed packages? are we even in a stage that they are installed already?
+        // we need the package info as well
+        // maybe we add it to org/expath/pkg/repo/Repository.java
+        // so when ever you install a new package it gets picked up
+        // org.exist.repo.Deployment.installAndDeploy(org.exist.storage.DBBroker, org.exist.storage.txn.Txn, org.expath.pkg.repo.XarSource, org.exist.repo.PackageLoader, boolean)
+        // seems a better place, it's in the same package and we don't have to introduce any new dependency
+
+
+
     }
+
 
     @Override
     public void shutdown() {
