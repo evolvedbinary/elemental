@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Elemental
+    Copyright (C) 2024, Evolved Binary Ltd
+
+    admin@evolvedbinary.com
+    https://www.evolvedbinary.com | https://www.elemental.xyz
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; version 2.1.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    NOTE: Parts of this file contain code from 'The eXist-db Authors'.
+          The original license header is included below.
+
+    =====================================================================
+
+    eXist-db Open Source Native XML Database
+    Copyright (C) 2001 The eXist-db Authors
+
+    info@exist-db.org
+    http://www.exist-db.org
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+-->
+<exist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="${project.basedir}/../schema/conf.xsd">
+
+    <db-connection cacheSize="256M" checkMaxCacheSize="true" collectionCache="64M" database="native"
+        files="${basedir}/target/test-data" pageSize="4096" nodesBuffer="1000" cacheShrinkThreshold="10000"
+        minDiskSpace="1024M" posix-chown-restricted="true" preserve-on-copy="false">
+
+        <startup>
+            <triggers>
+                <trigger class="org.exist.security.BouncyCastleJceProviderStartupTrigger"/>
+                <trigger class="org.exist.protocolhandler.URLStreamHandlerStartupTrigger">
+                    <parameter name="mode" value="disk"/>
+                    <parameter name="mode" value="memory"/>
+                </trigger>
+            </triggers>
+        </startup>
+
+        <pool max="20" min="1" sync-period="120000" wait-before-shutdown="120000"/>
+
+        <query-pool max-stack-size="64" size="128"/>
+
+        <recovery enabled="yes"  group-commit="no"   journal-dir="${basedir}/target/test-data"
+                  size="100M" sync-on-commit="no"  force-restart="no"  consistency-check="yes"/>
+
+        <watchdog output-size-limit="1000000" query-timeout="-1"/>
+
+    </db-connection>
+
+    <lock-manager upgrade-check="false" warn-wait-on-read-for-write="false" paths-multi-writer="false">
+
+        <lock-table disabled="false" trace-stack-depth="0"/>
+
+        <document use-path-locks="false"/>
+
+    </lock-manager>
+
+    <repository root="/db/apps"/>
+
+    <binary-manager>
+        <cache class="org.exist.util.io.FileFilterInputStreamCache"/>
+    </binary-manager>
+
+    <indexer caseSensitive="yes" index-depth="5" preserve-whitespace-mixed-content="no"
+        suppress-whitespace="none"/>
+
+    <parser>
+        <html-to-xml class="org.codelibs.nekohtml.parsers.SAXParser">
+            <properties>
+                <property name="http://cyberneko.org/html/properties/names/elems" value="match"/>
+                <property name="http://cyberneko.org/html/properties/names/attrs" value="no-change"/>
+            </properties>
+        </html-to-xml>
+    </parser>
+
+    <serializer add-exist-id="none" compress-output="no" output-doctype="yes" enable-xinclude="yes"
+                enable-xsl="no" indent="yes" match-tagging-attributes="no" 
+                match-tagging-elements="no"/>
+
+    <transformer class="net.sf.saxon.TransformerFactoryImpl" caching="yes">
+        <attribute name="http://saxon.sf.net/feature/version-warning" value="false" type="boolean"/>
+    </transformer>
+
+    <validation mode="no">
+        <entity-resolver>
+            <catalog uri="${project.build.testOutputDirectory}/org/exist/validation/catalog.xml"/>
+        </entity-resolver>
+    </validation>
+
+    <xquery enable-java-binding="no" disable-deprecated-functions="no" 
+            enable-query-rewriting="yes" backwardCompatible="no" 
+            enforce-index-use="strict"
+            raise-error-on-failed-retrieval="no">
+
+        <builtin-modules>
+
+            <!-- XQSuite Test Framework for XQuery testing -->
+            <module uri="http://exist-db.org/xquery/xqsuite" src="resource:org/exist/xquery/lib/xqsuite/xqsuite.xql" />
+
+            <module uri="http://www.w3.org/2005/xpath-functions/map"  class="org.exist.xquery.functions.map.MapModule" />
+            <module uri="http://www.w3.org/2005/xpath-functions/math" class="org.exist.xquery.functions.math.MathModule" />
+            <module uri="http://www.w3.org/2005/xpath-functions/array" class="org.exist.xquery.functions.array.ArrayModule" />
+
+            <module uri="http://exist-db.org/xquery/inspection" class="org.exist.xquery.functions.inspect.InspectionModule"/>
+            <module uri="http://exist-db.org/xquery/request"    class="org.exist.xquery.functions.request.RequestModule" />
+            <module uri="http://exist-db.org/xquery/response"   class="org.exist.xquery.functions.response.ResponseModule" />
+            <module uri="http://exist-db.org/xquery/securitymanager" class="org.exist.xquery.functions.securitymanager.SecurityManagerModule"/>
+            <module uri="http://exist-db.org/xquery/session"    class="org.exist.xquery.functions.session.SessionModule" />
+            <module uri="http://exist-db.org/xquery/system"     class="org.exist.xquery.functions.system.SystemModule" />
+            <module uri="http://exist-db.org/xquery/transform"  class="org.exist.xquery.functions.transform.TransformModule" />
+            <module uri="http://exist-db.org/xquery/util"       class="org.exist.xquery.functions.util.UtilModule">
+                <!-- set to true to disable the util:eval functions -->
+                <parameter name="evalDisabled" value="false"/>
+            </module>
+            <module uri="http://exist-db.org/xquery/validation" class="org.exist.xquery.functions.validation.ValidationModule" />
+            <module uri="http://exist-db.org/xquery/xmldb"      class="org.exist.xquery.functions.xmldb.XMLDBModule" />
+
+        </builtin-modules>
+
+    </xquery>
+
+    <xupdate allowed-fragmentation="50000" enable-consistency-checks="no"/>
+
+    <saxon configuration-file="saxon-config.xml"/>
+
+    <rpc-server>
+
+        <content-file in-memory-size="4194304"/>
+
+        <content-file-pool size="-1" max-idle="5"/>
+
+    </rpc-server>
+
+</exist>

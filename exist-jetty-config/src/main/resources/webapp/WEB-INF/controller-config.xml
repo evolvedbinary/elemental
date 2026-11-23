@@ -30,6 +30,9 @@
   
   <!-- The JMX status servlet used to monitor the db -->
   <forward pattern="/status" servlet="JMXServlet"/>
+
+  <!-- EXPath Package Management API -->
+  <forward pattern="/expath/package" servlet="ExpathPkgMgmtServlet"/>
   
   <!-- HTTP requests to /apps are mapped onto the database path /db/apps -->
   <root pattern="/apps" path="xmldb:exist:///db/apps"/>

@@ -141,6 +141,14 @@
         <servlet-class>org.exist.extensions.exquery.restxq.impl.RestXqServlet</servlet-class>
     </servlet>
 
+    <!--
+    EXPath Package Management API
+-->
+    <servlet>
+        <servlet-name>ExpathPkgMgmtServlet</servlet-name>
+        <servlet-class>xyz.elemental.api.expath.pkg.mgmt.ExpathPkgMgmtServlet</servlet-class>
+    </servlet>
+
     <!-- Enabled dynamic GZip of server responses
 
         Standard approach is to use org.eclipse.jetty.servlets.GZipFilter, the
