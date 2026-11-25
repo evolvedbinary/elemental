@@ -270,6 +270,14 @@
         <servlet-class>org.exist.webstart.JnlpServlet</servlet-class>
     </servlet>
 
+    <!--
+        EXPath Package Management API
+    -->
+    <servlet>
+        <servlet-name>ExpathPkgMgmtServlet</servlet-name>
+        <servlet-class>xyz.elemental.api.expath.pkg.mgmt.ExpathPkgMgmtServlet</servlet-class>
+    </servlet>
+
 
     <!--
         ====================== URL space mappings =======================

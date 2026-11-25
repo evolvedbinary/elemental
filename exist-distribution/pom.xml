@@ -82,6 +82,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-expath-pkg-mgmt-api</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>exist-core</artifactId>
             <version>${project.version}</version>

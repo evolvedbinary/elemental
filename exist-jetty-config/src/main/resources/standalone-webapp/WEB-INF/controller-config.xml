@@ -19,6 +19,9 @@
     <!-- RESTXQ -->
     <forward pattern="/restxq/" servlet="RestXqServlet"/>
 
+    <!-- EXPath Package Management API -->
+    <forward pattern="/expath/package" servlet="ExpathPkgMgmtServlet"/>
+
     <!-- 
         ++ Main web application is served from the
         ++ database. URLs starting with /db are handled
