@@ -69,7 +69,27 @@
             <groupId>xyz.elemental.fork.org.exist-db</groupId>
             <artifactId>exist-core</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>xyz.elemental</groupId>
+            <artifactId>elemental-media-type-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.expath.packaging</groupId>
+            <artifactId>pkg-java</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
         </dependency>
 
         <dependency>

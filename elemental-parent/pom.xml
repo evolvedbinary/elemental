@@ -111,6 +111,7 @@
         <apache.httpcomponents.core.version>4.4.16</apache.httpcomponents.core.version>
         <jetty.version>11.0.26</jetty.version>
         <xmlunit.version>2.11.0</xmlunit.version>
+        <log4j.version>2.26.1</log4j.version>
 
         <!-- Surefire parallel configuration -->
         <surefire.forkCount>1C</surefire.forkCount>
@@ -214,6 +215,24 @@
                 <groupId>org.xmlunit</groupId>
                 <artifactId>xmlunit-core</artifactId>
                 <version>${xmlunit.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.expath.packaging</groupId>
+                <artifactId>pkg-java</artifactId>
+                <version>2.0.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
+                <artifactId>xml-apis</artifactId>
+                <version>1.4.02</version>
             </dependency>
 
             <dependency>

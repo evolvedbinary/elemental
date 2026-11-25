@@ -97,7 +97,6 @@
         <izpack.version>5.2.4</izpack.version>
         <jline.version>3.30.6</jline.version>
         <lz4-java.version>1.10.2</lz4-java.version>
-        <log4j.version>2.26.1</log4j.version>
         <lucene.version>4.10.4</lucene.version>
         <nekohtml.version>2.1.3</nekohtml.version>
         <xerces.version>2.12.2.2</xerces.version>
@@ -157,15 +156,11 @@
 
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-api</artifactId>
-                <version>${log4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-core</artifactId>
                 <version>${log4j.version}</version>
                 <scope>runtime</scope>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-jcl</artifactId>
@@ -325,12 +320,6 @@
             </dependency>
 
             <dependency>
-                <groupId>org.expath.packaging</groupId>
-                <artifactId>pkg-java</artifactId>
-                <version>2.0.1</version>
-            </dependency>
-
-            <dependency>
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
                 <version>1.18.2</version>
@@ -346,12 +335,6 @@
                 <groupId>it.unimi.dsi</groupId>
                 <artifactId>fastutil</artifactId>
                 <version>8.5.18</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.evolvedbinary.thirdparty.xml-apis</groupId>
-                <artifactId>xml-apis</artifactId>
-                <version>1.4.02</version>
             </dependency>
 
             <dependency>
